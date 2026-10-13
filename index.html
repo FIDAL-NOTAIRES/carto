@@ -6,7 +6,7 @@
 <title>CARTO — écosystème des outils FIDAL Notaires</title>
 <style>
 /* ============================================================
-   CARTO v1.2 — charte FIDAL v2.2 — dépôt propre `carto`
+   CARTO v1.3 (13/10/2026 : finitions du mode pilotage) — charte FIDAL v2.2 — dépôt propre `carto`
    Pastille d'état des points calculée mécaniquement (décision du 23/09/2026)
    Cinq familles par nature d'usage · guirlandes · suggestions arbitrées
    Bleu nuit #0F2238 · bleu canard #33838B · orange #FF982D
@@ -103,6 +103,26 @@ h1,h2,h3,.titre{font-family:Georgia,"Times New Roman",serif;font-weight:400}
 .filtres-sugg button[aria-pressed="true"]{background:var(--canard);border-color:var(--canard);color:#fff}
 .tiroir .liste{overflow-y:auto;flex:1;padding:4px 22px 30px}
 .sugg{padding:12px 0;border-bottom:1px solid var(--trait)}
+/* 13/10/2026 — suggestions regroupées par outil, fond pâle de la famille */
+.bloc-sugg{border-radius:10px;padding:10px 14px 4px;margin:12px 0}
+.bloc-sugg > h3{margin:0 0 2px;font-size:13px;letter-spacing:.4px;font-weight:600}
+.bloc-sugg .sugg:last-child{border-bottom:0}
+.bloc-sugg .sugg.en-attente{opacity:.55}
+.sugg .etat-sugg{display:inline-block;font-size:10.5px;padding:1px 8px;border-radius:999px;margin-left:6px;background:var(--vert-fonce);color:#fff;vertical-align:1px}
+.sugg .choix button.repecher{border-color:var(--canard);color:var(--cyan)}
+.sugg .choix button.supprimer{border-color:var(--carmin);color:#F0A0B4}
+.bandeau-google{position:absolute;left:0;right:0;top:0;z-index:20;background:var(--carmin);color:#fff;font-size:13px;padding:8px 18px;text-align:center}
+.bandeau-google a{color:#fff;font-weight:600}
+#bandeau-google:not([hidden]) ~ .outils-carte{top:48px}
+.lecture-heure{font-size:11px;color:var(--encre-faible);margin-left:6px}
+@media (max-width:760px){.lecture-heure{display:none}}
+.compteurs-pts{display:flex;gap:8px;margin:2px 0 10px;font-size:12px}
+.compteurs-pts span{border:1px solid var(--trait);border-radius:999px;padding:2px 10px}
+.compteurs-pts span.b{border-color:#E5484D;color:#F3A3A6}
+.bulle-carte{position:fixed;z-index:30;pointer-events:none;max-width:280px;background:#0B1A2B;border:1px solid var(--trait);border-radius:10px;padding:10px 12px;font-size:12.5px;line-height:1.45;color:#D3E1EC;box-shadow:0 10px 30px rgba(0,0,0,.4)}
+.bulle-carte b{display:block;color:#fff;font-size:13.5px;margin-bottom:3px}
+.bulle-carte .mini{color:var(--encre-faible);font-size:11.5px;margin-top:5px}
+.noeud .lisere{fill:none;stroke:#FFE764;stroke-width:3;stroke-dasharray:4 3}
 .sugg .qui{font-size:11.5px;color:var(--cyan);letter-spacing:.4px;margin-bottom:3px}
 .sugg .quoi{font-size:13.5px;line-height:1.5;color:#D3E1EC}
 .sugg .choix{display:flex;gap:6px;margin-top:8px}
@@ -335,11 +355,14 @@ li.bloquant::before{content:"★ ";color:#E5484D}
 
   <!-- ============ MODE PILOTAGE ============ -->
   <section class="vue active" id="vue-pilotage">
+    <!-- 24/09/2026 : bandeau en haut de la carte, non fermable, tant que l'accord Google manque -->
+    <div class="bandeau-google" id="bandeau-google" hidden>Google indisponible — <a href="https://connexion-omega.vercel.app/" target="_blank" rel="noopener">ouvrir la connexion du matin</a> dans un nouvel onglet, puis cliquer ↻</div>
     <div class="outils-carte">
       <button class="bouton-filtre" id="f-reste" aria-pressed="false">Ce qui reste à faire</button>
       <div class="etat-drive" id="etat-drive" aria-live="polite">
         <i></i><span id="etat-drive-texte">Mémos Drive : lecture…</span>
         <button type="button" id="btn-rafraichir" title="Relire les points depuis le Drive" aria-label="Rafraîchir">↻</button>
+        <span class="lecture-heure" id="lecture-heure"></span>
       </div>
     </div>
     <svg id="carte" viewBox="-560 -535 1120 1070" preserveAspectRatio="xMidYMid meet" role="img"
@@ -379,7 +402,7 @@ li.bloquant::before{content:"★ ";color:#E5484D}
       <div class="sections" id="p-sections"></div>
     </aside>
 
-    <button class="btn-sugg" id="btn-sugg" aria-expanded="false">Suggestions <span id="sugg-nb">0</span></button>
+    <button class="btn-sugg" id="btn-sugg" aria-expanded="false">Suggestions</button>
     <aside class="tiroir" id="tiroir" aria-label="Suggestions à arbitrer">
       <div class="tete">
         <button class="fermer" id="fermer-tiroir" aria-label="Fermer">×</button>
@@ -387,11 +410,8 @@ li.bloquant::before{content:"★ ";color:#E5484D}
         <div class="srv" id="sugg-srv">arbitrages conservés sur le serveur du cabinet</div>
       </div>
       <div class="filtres-sugg" id="filtres-sugg">
-        <button data-f="ouvertes" aria-pressed="true">À trancher</button>
-        <button data-f="fait" aria-pressed="false">On fait</button>
-        <button data-f="attend" aria-pressed="false">On attend</button>
-        <button data-f="abandonne" aria-pressed="false">Abandonnées</button>
-        <button data-f="toutes" aria-pressed="false">Toutes</button>
+        <button id="btn-corbeille" aria-pressed="false" title="Suggestions abandonnées, tous outils confondus">🗑 Corbeille</button>
+        <button id="btn-vider" hidden>Vider la corbeille</button>
       </div>
       <div class="liste" id="sugg-liste"></div>
     </aside>
@@ -690,6 +710,7 @@ async function chargerPointsDrive(interactif){
   const jeton = await FidalAcces.jeton({interactif: !!interactif});
   if(!jeton){
     etatDrive("", `Drive non connecté — <a href="${PAGE_CONNEXION}" target="_blank" rel="noopener">ouvrir la journée</a> puis ↻`);
+    bandeauGoogle(true);
     return;
   }
   try{
@@ -723,13 +744,18 @@ async function chargerPointsDrive(interactif){
     pointsDrive = lus>0;
     const manquants = OUTILS.length - lus;
     etatDrive("ok", `Mémos Drive : ${lus} fichier${lus>1?"s":""} de points lu${lus>1?"s":""}`+(manquants?` — ${manquants} outil${manquants>1?"s":""} sans fichier (points de la carte)`:""));
+    bandeauGoogle(false);
+    const h = new Date();
+    document.getElementById("lecture-heure").textContent = "lu le " + h.toLocaleDateString("fr-FR") + " à " + h.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});
     dessinerCarte();
     if(selection){ surligner(selection); ouvrir(selection); }
     if(typeof majChiffres==="function") majChiffres();
   }catch(e){
     etatDrive("ko", "Lecture du Drive impossible ("+e.message+") — points de la carte");
+    bandeauGoogle(true);
   }
 }
+function bandeauGoogle(on){ const b = document.getElementById("bandeau-google"); if(b) b.hidden = !on; }
 document.getElementById("btn-rafraichir").addEventListener("click", ()=>chargerPointsDrive(true));
 /* à l'ouverture : reprise silencieuse de l'accord du matin ; si elle échoue, la pastille propose la page de connexion */
 setTimeout(()=>chargerPointsDrive(false), 400);
@@ -885,7 +911,7 @@ function jaugeHTML(niveau, largeur){
 const API_PARAMETRES = "https://prix-mu.vercel.app/api/parametres?outil=carto&cle=arbitrages";
 let arbitrages = {};
 try{ arbitrages = JSON.parse(localStorage.getItem("carto-arbitrages")||"{}"); }catch(e){ arbitrages = {}; }
-let filtreSugg = "ouvertes";
+let vueCorbeille = false;
 let minuteurSauve = null;
 
 function toutesSuggestions(){
@@ -900,7 +926,7 @@ function toutesSuggestions(){
   })));
   return l;
 }
-const nbOuvertes = () => toutesSuggestions().filter(x=>!arbitrages[x.cle]).length;
+const nbOuvertes = () => toutesSuggestions().filter(x=>!arbitrages[x.cle]).length;   // n'est plus affiché (24/09 : pas de compteur)
 
 function marquerSrv(cl,txt){
   const e=document.getElementById("sugg-srv"); if(!e) return;
@@ -936,32 +962,66 @@ function sauverArbitrages(){
   }, 600);
 }
 function arbitrer(cle, etat){
-  if(arbitrages[cle]===etat) delete arbitrages[cle]; else arbitrages[cle]=etat;
+  if(etat===null || arbitrages[cle]===etat) delete arbitrages[cle]; else arbitrages[cle]=etat;
   sauverArbitrages(); rendreSuggestions(); majCompteurSugg();
   if(selection) ouvrir(selection);
 }
-function majCompteurSugg(){
-  const e=document.getElementById("sugg-nb"); if(e) e.textContent = nbOuvertes();
-}
+/* 21/09/2026 : pas de compteur sur le bouton des suggestions (écran calme en pilotage) */
+function majCompteurSugg(){}
+/* Suggestions — arbitrages des 21, 22 et 24/09/2026 :
+   • regroupées PAR OUTIL, outils dans l'ordre ALPHABÉTIQUE, chaque bloc sur un
+     fond PÂLE de la couleur de sa famille ; un outil sans suggestion n'apparaît pas ;
+   • dans un bloc : les non arbitrées d'abord, puis les « on fait », qui restent
+     visibles et marquées, puis les « on attend », en bas et atténuées ;
+   • les abandonnées vont dans UNE corbeille commune, chacune avec le nom de son
+     outil ; repêchage possible (retour non arbitré), suppression définitive avec
+     confirmation, et un bouton pour vider toute la corbeille ;
+   • le réarbitrage ne se fait qu'ici, jamais depuis le panneau latéral. */
 function rendreSuggestions(){
   const boite=document.getElementById("sugg-liste"); if(!boite) return;
-  const liste = toutesSuggestions().filter(x=>{
-    const e = arbitrages[x.cle]||"";
-    if(filtreSugg==="toutes") return true;
-    if(filtreSugg==="ouvertes") return !e;
-    return e===filtreSugg;
-  });
-  if(!liste.length){
-    boite.innerHTML = `<p class="vide" style="padding:18px 0">${filtreSugg==="ouvertes"?"Tout est tranché.":"Rien dans cette catégorie."}</p>`;
-    return;
-  }
+  const etatDe = x => arbitrages[x.cle]||"";
   const bouton=(x,e,lib)=>`<button type="button" class="${e}" data-cle="${x.cle}" data-e="${e}" aria-pressed="${arbitrages[x.cle]===e}">${lib}</button>`;
-  boite.innerHTML = liste.map(x=>`<div class="sugg ${arbitrages[x.cle]==="abandonne"?"abandonnee":""} ${arbitrages[x.cle]==="fait"?"faite":""}">
-      <div class="qui">${x.qui}</div>
-      <div class="quoi">${x.quoi}</div>
-      <div class="choix">${bouton(x,"fait","On fait")}${bouton(x,"attend","On attend")}${bouton(x,"abandonne","On abandonne")}</div>
-    </div>`).join("");
-  boite.querySelectorAll(".choix button").forEach(b=>b.addEventListener("click",()=>arbitrer(b.dataset.cle,b.dataset.e)));
+  const toutes = toutesSuggestions();
+  const bCorb = document.getElementById("btn-corbeille"), bVider = document.getElementById("btn-vider");
+  const corbeille = toutes.filter(x=>etatDe(x)==="abandonne");
+  if(bCorb){ bCorb.textContent = vueCorbeille ? "← Retour aux suggestions" : "🗑 Corbeille"; bCorb.setAttribute("aria-pressed", vueCorbeille); }
+  if(bVider) bVider.hidden = !(vueCorbeille && corbeille.length);
+
+  if(vueCorbeille){
+    boite.innerHTML = corbeille.length
+      ? corbeille.map(x=>`<div class="sugg abandonnee">
+          <div class="qui">${parId[x.outil]?.nom||x.qui}${x.qui!==(parId[x.outil]?.nom)?" · "+x.qui:""}</div>
+          <div class="quoi">${x.quoi}</div>
+          <div class="choix"><button type="button" class="repecher" data-cle="${x.cle}" data-e="">Repêcher</button>
+            <button type="button" class="supprimer" data-cle="${x.cle}" data-e="supprime">Supprimer définitivement</button></div>
+        </div>`).join("")
+      : `<p class="vide" style="padding:18px 0">La corbeille est vide.</p>`;
+  } else {
+    const parOutil = new Map();
+    toutes.filter(x=>!["abandonne","supprime"].includes(etatDe(x))).forEach(x=>{
+      if(!parOutil.has(x.outil)) parOutil.set(x.outil, []);
+      parOutil.get(x.outil).push(x);
+    });
+    const rang = x => ({"":0, fait:1, attend:2})[etatDe(x)] ?? 0;
+    const blocs = [...parOutil.entries()]
+      .sort((a,b)=>(parId[a[0]]?.nom||a[0]).localeCompare(parId[b[0]]?.nom||b[0], "fr"))
+      .map(([id, ls])=>{
+        const o = parId[id], coul = o ? FAMILLES[o.famille].couleur : "#6DD5DC";
+        return `<div class="bloc-sugg" style="background:${opa(coul,.11)};border:1px solid ${opa(coul,.35)}">
+          <h3 style="color:${coul}">${o?.nom||id}</h3>
+          ${ls.sort((a,b)=>rang(a)-rang(b)).map(x=>`<div class="sugg ${etatDe(x)==="attend"?"en-attente":""} ${etatDe(x)==="fait"?"faite":""}">
+            <div class="qui">${x.qui!==o?.nom?x.qui:""}${etatDe(x)==="fait"?'<span class="etat-sugg">on fait</span>':""}</div>
+            <div class="quoi">${x.quoi}</div>
+            <div class="choix">${bouton(x,"fait","On fait")}${bouton(x,"attend","On attend")}${bouton(x,"abandonne","On abandonne")}</div>
+          </div>`).join("")}
+        </div>`;
+      });
+    boite.innerHTML = blocs.length ? blocs.join("") : `<p class="vide" style="padding:18px 0">Aucune suggestion à arbitrer.</p>`;
+  }
+  boite.querySelectorAll(".choix button").forEach(b=>b.addEventListener("click",()=>{
+    if(b.dataset.e==="supprime" && !confirm("Supprimer définitivement cette suggestion ? Elle ne reviendra plus.")) return;
+    arbitrer(b.dataset.cle, b.dataset.e || null);
+  }));
 }
 
 /* ==================================================================
@@ -1067,6 +1127,15 @@ function dessinerCarte(){
     pa.setAttribute("class","pastille");
     g.appendChild(pa);
 
+    // 21/09/2026 : outil non touché depuis TROIS MOIS (seuil fixe), compté depuis la
+    // dernière modification de son fichier POINTS — liseré jaune, sur ordinateur
+    const org = POINTS_ORIGINE[o.id];
+    if(org && (Date.now() - new Date(org.modifie).getTime()) > 90*86400000){
+      const li = document.createElementNS(SVGNS,"circle");
+      li.setAttribute("r", p.r+5); li.setAttribute("class","lisere");
+      g.insertBefore(li, g.firstChild);
+    }
+
     // libellé
     const etiq = nomDe(o);
     const mots = etiq.split(" ");
@@ -1109,10 +1178,30 @@ function dessinerCarte(){
     });
     n.addEventListener("auxclick",e=>{ if(e.button===1){ e.preventDefault(); ouvrirAppli(n.dataset.id); } });
     n.addEventListener("keydown",e=>{ if(e.key==="Enter"||e.key===" "){e.preventDefault();ouvrir(n.dataset.id);} });
-    n.addEventListener("mouseenter",()=>surligner(n.dataset.id));
-    n.addEventListener("mouseleave",()=>{ if(!selection) surligner(null); });
+    n.addEventListener("mouseenter",e=>{ surligner(n.dataset.id); montrerBulle(n.dataset.id, e); });
+    n.addEventListener("mousemove",e=>placerBulle(e));
+    n.addEventListener("mouseleave",()=>{ cacherBulle(); if(!selection) surligner(null); });
   });
 }
+
+/* Bulle au survol, sur ordinateur seulement (22 et 24/09/2026) : nom de l'outil,
+   une phrase sur sa finalité, date de dernière modification de son fichier de
+   points, et les deux compteurs (bloquants, ordinaires). */
+let bulle = null;
+const survolPossible = () => window.matchMedia && window.matchMedia("(hover:hover)").matches;
+function montrerBulle(id, e){
+  if(!survolPossible()) return;
+  const o = parId[id]; if(!o) return;
+  if(!bulle){ bulle = document.createElement("div"); bulle.className = "bulle-carte"; document.body.appendChild(bulle); }
+  const ouverts = (o.points||[]).map(pointDe).filter(p=>!p.fait);
+  const b = ouverts.filter(p=>p.bloquant).length, org = POINTS_ORIGINE[o.id];
+  bulle.innerHTML = `<b>${nomDe(o)}</b>${o.resume||""}`
+    + `<div class="mini">${org ? "modifié le " + new Date(org.modifie).toLocaleDateString("fr-FR") : "aucun fichier de points sur le Drive"}`
+    + ` · ${b} bloquant${b>1?"s":""} · ${ouverts.length-b} ordinaire${ouverts.length-b>1?"s":""}</div>`;
+  bulle.hidden = false; placerBulle(e);
+}
+function placerBulle(e){ if(!bulle || bulle.hidden) return; bulle.style.left = (e.clientX+16)+"px"; bulle.style.top = (e.clientY+14)+"px"; }
+function cacherBulle(){ if(bulle) bulle.hidden = true; }
 
 /* La version de poche : sur téléphone, le schéma est illisible ; on montre la
    même information en liste, famille par famille, et le toucher ouvre le
@@ -1238,11 +1327,15 @@ function ouvrir(id){
   document.getElementById("p-pastille").innerHTML =
     `<i style="background:${PASTILLE[ep.cle].c}"></i><b>${PASTILLE[ep.cle].nom}</b><small>${textePastille(ep)}</small>`;
 
-  /* les points réalisés restent affichés, barrés ; les autres sont à faire */
-  const listePts = (o.points||[]).map(pointDe);
-  const pts = listePts.length
-    ? `<ul>${listePts.map(p=>`<li class="${p.fait?"fait":(p.bloquant?"bloquant":"")}">${p.t}</li>`).join("")}</ul>`
-    : `<p class="vide">Rien de relevé pour l'instant.</p>`;
+  /* 24/09/2026 : un point réglé DISPARAÎT du panneau ; les BLOQUANTS remontent
+     en tête, les ordinaires en dessous, chaque groupe dans l'ordre du fichier
+     (le plus ancien en haut) ; deux compteurs distincts, non cliquables. */
+  const ouverts = (o.points||[]).map(pointDe).filter(p=>!p.fait);
+  const bloq = ouverts.filter(p=>p.bloquant), ordi = ouverts.filter(p=>!p.bloquant);
+  const pts = ouverts.length
+    ? `<div class="compteurs-pts"><span class="b">${bloq.length} bloquant${bloq.length>1?"s":""}</span><span>${ordi.length} ordinaire${ordi.length>1?"s":""}</span></div>`
+      + `<ul>${bloq.concat(ordi).map(p=>`<li class="${p.bloquant?"bloquant":""}">${p.t}</li>`).join("")}</ul>`
+    : `<p class="vide">Aucun point ouvert.</p>`;
   /* les pistes portent l'arbitrage rendu dans la liste des suggestions */
   const ETIQ = {fait:"on fait", attend:"on attend", abandonne:"abandonnée"};
   const pis = o.pistes && o.pistes.length
@@ -1263,11 +1356,12 @@ function ouvrir(id){
   const org = POINTS_ORIGINE[o.id];
   document.getElementById("p-source").innerHTML = org
     ? `Points lus sur le Drive (<a href="https://drive.google.com/file/d/${org.fichier}/view" target="_blank" rel="noopener">${org.nom}</a>, modifié le ${new Date(org.modifie).toLocaleDateString("fr-FR")})`
-    : `Points de la carte — aucun fichier POINTS-${o.id}.md trouvé sur le Drive`;
+    : `<b style="color:#FFE764">Aucun fichier POINTS-${o.id}.md trouvé sur le Drive</b> — points inscrits dans la carte`;
   document.getElementById("p-sections").innerHTML =
       sectionHTML("Points à travailler", pts, pointsRestants(o), "")
-    + sectionHTML("Pistes proposées", pis, (o.pistes||[]).length, "pistes")
-    + sectionHTML("Interactions", liensHTML, entrants.length+sortants.length, "");
+    + sectionHTML("Pistes proposées", pis, (o.pistes||[]).length, "pistes");
+  /* 24/09/2026 : les liens entrants et sortants restent au SEUL schéma — pas de liste dans le panneau */
+  void liensHTML;
 
   document.querySelectorAll("#p-sections .section > button").forEach(b=>{
     b.addEventListener("click",()=>{
@@ -1287,6 +1381,12 @@ function fermer(){
   surligner(null);
 }
 document.getElementById("fermer").addEventListener("click",fermer);
+/* 21/09/2026 : le panneau se ferme au clic ailleurs dans le schéma (le déplacement
+   et le zoom restent possibles panneau ouvert) */
+svg.addEventListener("click", e=>{
+  const glisse = svg.dataset.glisse; delete svg.dataset.glisse;
+  if(!glisse && !e.target.closest(".noeud") && panneau.classList.contains("ouvert")) fermer();
+});
 document.addEventListener("keydown",e=>{ if(e.key==="Escape") fermer(); });
 
 /* légende des niveaux */
@@ -1315,12 +1415,13 @@ dessinerCarte();
   const maj=()=>svg.setAttribute("viewBox",`${vb.x} ${vb.y} ${vb.w} ${vb.h}`);
   svg.addEventListener("pointerdown",e=>{
     if(e.target.closest(".noeud")) return;
-    tire=true; ox=e.clientX; oy=e.clientY;
+    tire=true; ox=e.clientX; oy=e.clientY; delete svg.dataset.glisse;
     svg.classList.add("tire"); svg.setPointerCapture(e.pointerId);
   });
   svg.addEventListener("pointermove",e=>{
     if(!tire) return;
     const k=vb.w/svg.clientWidth;
+    if(Math.abs(e.clientX-ox)+Math.abs(e.clientY-oy)>3) svg.dataset.glisse="1";   // un glissé n'est pas un clic
     vb.x-=(e.clientX-ox)*k; vb.y-=(e.clientY-oy)*k;
     ox=e.clientX; oy=e.clientY; maj();
   });
@@ -1945,6 +2046,11 @@ function brancherFiltre(id,cle){
   });
 }
 brancherFiltre("f-reste","reste");
+/* 21/09/2026 : le filtre conserve son état d'une ouverture à l'autre */
+try{
+  if(localStorage.getItem("carto-filtre-reste")==="1"){ filtres.reste = true; document.getElementById("f-reste").setAttribute("aria-pressed","true"); dessinerCarte(); }
+}catch(e){}
+document.getElementById("f-reste").addEventListener("click",()=>{ try{ localStorage.setItem("carto-filtre-reste", filtres.reste?"1":"0"); }catch(e){} });
 
 /* ---------- tiroir des suggestions ---------- */
 const tiroir=document.getElementById("tiroir"), bSugg=document.getElementById("btn-sugg");
@@ -1952,11 +2058,13 @@ function ouvrirTiroir(){ rendreSuggestions(); tiroir.classList.add("ouvert"); bS
 function fermerTiroir(){ tiroir.classList.remove("ouvert"); bSugg.setAttribute("aria-expanded","false"); }
 bSugg.addEventListener("click",()=>tiroir.classList.contains("ouvert")?fermerTiroir():ouvrirTiroir());
 document.getElementById("fermer-tiroir").addEventListener("click",fermerTiroir);
-document.querySelectorAll("#filtres-sugg button").forEach(b=>b.addEventListener("click",()=>{
-  filtreSugg=b.dataset.f;
-  document.querySelectorAll("#filtres-sugg button").forEach(x=>x.setAttribute("aria-pressed",x===b));
-  rendreSuggestions();
-}));
+document.getElementById("btn-corbeille").addEventListener("click",()=>{ vueCorbeille = !vueCorbeille; rendreSuggestions(); });
+document.getElementById("btn-vider").addEventListener("click",()=>{
+  const ls = toutesSuggestions().filter(x=>arbitrages[x.cle]==="abandonne");
+  if(!ls.length || !confirm(`Vider la corbeille : ${ls.length} suggestion${ls.length>1?"s":""} supprimée${ls.length>1?"s":""} définitivement ?`)) return;
+  ls.forEach(x=>{ arbitrages[x.cle]="supprime"; });
+  sauverArbitrages(); rendreSuggestions();
+});
 majCompteurSugg();
 chargerArbitrages();
 
