@@ -6,7 +6,7 @@
 <title>CARTO — écosystème des outils FIDAL Notaires</title>
 <style>
 /* ============================================================
-   CARTO v1.4 (13/10/2026 : finitions du pilotage, de la présentation, de la visite guidée et du téléphone) — charte FIDAL v2.2 — dépôt propre `carto`
+   CARTO v1.5 (13/10/2026 : finitions du pilotage, de la présentation, de la visite guidée et du téléphone ; points numérotés réglables) — charte FIDAL v2.2 — dépôt propre `carto`
    Pastille d'état des points calculée mécaniquement (décision du 23/09/2026)
    Cinq familles par nature d'usage · guirlandes · suggestions arbitrées
    Bleu nuit #0F2238 · bleu canard #33838B · orange #FF982D
@@ -116,6 +116,13 @@ h1,h2,h3,.titre{font-family:Georgia,"Times New Roman",serif;font-weight:400}
 #bandeau-google:not([hidden]) ~ .outils-carte{top:48px}
 .lecture-heure{font-size:11px;color:var(--encre-faible);margin-left:6px}
 @media (max-width:760px){.lecture-heure{display:none}}
+.num-pt{color:var(--cyan);font-weight:600;margin-right:2px}
+.date-pt{font-size:10.5px;color:var(--encre-faible);margin-left:7px;white-space:nowrap}
+.regler-pt{margin-left:8px;background:none;border:1px solid var(--trait);color:var(--encre-faible);border-radius:999px;font:inherit;font-size:10.5px;padding:1px 8px;cursor:pointer}
+.regler-pt:hover{border-color:var(--vert-fonce);color:#9BE3B5}
+.sans-num{margin-top:12px;padding:9px 12px;border-left:3px solid #FFC900;background:rgba(255,201,0,.07);color:#F5E3A0;font-size:12.5px;border-radius:4px}
+.sans-num ul{margin:6px 0 0}
+.alerte-gen{margin:0 0 10px;padding:10px 12px;border:1px solid #FF982D;background:rgba(255,152,45,.12);color:#FFD2A6;font-size:12.5px;border-radius:8px;font-weight:600}
 .compteurs-pts{display:flex;gap:8px;margin:2px 0 10px;font-size:12px}
 .compteurs-pts span{border:1px solid var(--trait);border-radius:999px;padding:2px 10px}
 .compteurs-pts span.b{border-color:#E5484D;color:#F3A3A6}
@@ -701,6 +708,14 @@ function etatDrive(cl, html, occupe){
   document.getElementById("etat-drive-texte").innerHTML = html;
   const b = document.getElementById("btn-rafraichir"); if(b) b.disabled = !!occupe;
 }
+/* 24/09/2026 : chaque point porte un NUMÉRO, continu par outil, inscrit par JFD
+   en tête du texte : « - [ ] 12. texte » (ou « #12 texte »). C'est par ce numéro,
+   jamais par l'intitulé qui se reformule, que CARTO reconnaît un point d'une
+   lecture à l'autre. */
+function numeroDe(t){
+  const m = String(t).match(/^(?:#\s*)?(\d{1,4})\s*[.)—–-]?\s+(.+)$/);
+  return m ? {num:Number(m[1]), t:m[2]} : {num:null, t};
+}
 function analyserPoints(texte){
   const pts = [];
   texte.split(/\r?\n/).forEach(l=>{
@@ -712,13 +727,13 @@ function analyserPoints(texte){
     if(m){
       let t = m[2];
       t = t.replace(/^(★|\*(?!\*))\s*/, ()=>{ b=true; return ""; });
-      pts.push({t, fait:m[1].toLowerCase()==="x", bloquant:b}); return;
+      pts.push({...numeroDe(t), fait:m[1].toLowerCase()==="x", bloquant:b}); return;
     }
     const n = x.match(/^\s*[-*]\s+(?!\[)(.+?)\s*$/);
     if(n){
       let t = n[1];
       t = t.replace(/^(★|\*(?!\*))\s*/, ()=>{ b=true; return ""; });
-      pts.push({t, fait:false, bloquant:b});
+      pts.push({...numeroDe(t), fait:false, bloquant:b});
     }
   });
   return pts;
@@ -746,6 +761,8 @@ async function chargerPointsDrive(interactif){
     u.searchParams.set("supportsAllDrives", "true");
     u.searchParams.set("includeItemsFromAllDrives", "true");
     const liste = (await (await driveGet(u, jeton)).json()).files || [];
+    await chargerEtatPts();
+    try{ const ab = await (await driveGet("https://www.googleapis.com/drive/v3/about?fields=user(emailAddress)", jeton)).json(); auteurCarto = ab?.user?.emailAddress || auteurCarto; }catch(e){}
     const cibles = [];
     liste.forEach(f=>{
       const m = f.name.match(/^POINTS-([a-z0-9-]+)\.md$/i);
@@ -766,6 +783,9 @@ async function chargerPointsDrive(interactif){
       }catch(e){ /* ce fichier reste sur le repli */ }
     }));
     pointsDrive = lus>0;
+    let aDater = false;
+    cibles.forEach(c=>{ if(POINTS_ORIGINE[c.id] && daterPoints(c.id, parId[c.id].points||[], c.f.modifiedTime)) aDater = true; });
+    if(aDater) sauverEtatPts();
     const manquants = OUTILS.length - lus;
     etatDrive("ok", `Mémos Drive : ${lus} fichier${lus>1?"s":""} de points lu${lus>1?"s":""}`+(manquants?` — ${manquants} outil${manquants>1?"s":""} sans fichier (points de la carte)`:""));
     bandeauGoogle(false);
@@ -876,8 +896,65 @@ const parId = Object.fromEntries(OUTILS.map(o=>[o.id,o]));
    rien ne se modifie à l'écran. */
 
 /* points à travailler : chaîne = à faire, objet {t, fait:true} = réalisé */
-const pointDe = p => typeof p==="string" ? {t:p,fait:false,bloquant:false} : {t:p.t||"",fait:!!p.fait,bloquant:!!p.bloquant};
-const pointsRestants = o => (o.points||[]).map(pointDe).filter(p=>!p.fait).length;
+const pointDe = p => typeof p==="string" ? {t:p,fait:false,bloquant:false,num:null} : {t:p.t||"",fait:!!p.fait,bloquant:!!p.bloquant,num:p.num??null};
+
+/* ---------- points réglés depuis CARTO, et date de chaque point (24/09/2026) ----------
+   • Régler un point n'écrit QU'EN BASE (base de réglages mutualisée, outil
+     « carto », clé « points ») : le fichier POINTS du Drive reste la saisie de JFD,
+     jamais réécrit. En cas de conflit, la BASE L'EMPORTE : un point réglé ici reste
+     réglé même s'il figure toujours dans le fichier.
+   • La date affichée à côté d'un point est celle de sa DERNIÈRE MODIFICATION :
+     CARTO retient le texte de chaque point numéroté et date tout changement.
+   • Chaque règlement est tracé au journal de CARTO (auteur et heure), simple trace
+     technique sans écran, propre à CARTO. */
+const API_POINTS = "https://prix-mu.vercel.app/api/parametres?outil=carto&cle=points";
+let etatPts = {regles:{}, dates:{}, journal:[]};
+let auteurCarto = "inconnu";
+async function chargerEtatPts(){
+  try{
+    const r = await fetch(API_POINTS,{cache:"no-store"});
+    if(r.ok){ const d = await r.json(); if(d && d.valeur && typeof d.valeur==="object") etatPts = {regles:{}, dates:{}, journal:[], ...d.valeur}; }
+  }catch(e){}
+}
+async function sauverEtatPts(){
+  etatPts.journal = (etatPts.journal||[]).slice(-500);
+  try{ await fetch(API_POINTS,{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify(etatPts)}); }catch(e){}
+}
+const estRegle = (id, num) => num!=null && !!(etatPts.regles[id]||{})[num];
+/* à chaque lecture du Drive : un point numéroté nouveau ou reformulé prend la date du jour
+   (la première fois, la date de modification du fichier) */
+function daterPoints(id, points, modifieFichier){
+  const d = etatPts.dates[id] = etatPts.dates[id] || {};
+  let change = false;
+  points.forEach(p=>{
+    if(p.num==null) return;
+    const e = d[p.num];
+    if(!e){ d[p.num] = {texte:p.t, modifie: modifieFichier || new Date().toISOString()}; change = true; }
+    else if(e.texte !== p.t){ d[p.num] = {texte:p.t, modifie:new Date().toISOString()}; change = true; }
+  });
+  return change;
+}
+const dateDuPoint = (id, num) => num!=null ? ((etatPts.dates[id]||{})[num]||{}).modifie || null : null;
+/* un fichier qui ne porte AUCUN numéro est d'ancienne génération : à reprendre en entier */
+const ancienneGeneration = o => POINTS_ORIGINE[o.id] && (o.points||[]).length > 0 && !(o.points||[]).some(p=>pointDe(p).num!=null);
+/* points ouverts : non cochés dans le fichier ET non réglés en base. Les points sans
+   numéro sont à part : ni dans les compteurs, ni dans la couleur de la pastille —
+   sauf pour un fichier d'ancienne génération, compté comme avant tant qu'il n'est
+   pas numéroté, pour que la carte ne passe pas au vert par défaut de saisie. */
+function pointsOuverts(o){
+  const tous = (o.points||[]).map(pointDe).filter(p=>!p.fait && !estRegle(o.id, p.num));
+  if(ancienneGeneration(o)) return {comptes:tous, sansNumero:[]};
+  return {comptes:tous.filter(p=>p.num!=null), sansNumero:tous.filter(p=>p.num==null)};
+}
+const pointsRestants = o => pointsOuverts(o).comptes.length;
+async function reglerPoint(id, num){
+  const o = parId[id], p = (o.points||[]).map(pointDe).find(x=>x.num===num); if(!p) return;
+  if(!confirm(`Régler le point ${num} de ${o.nom} ?\n\n« ${p.t} »\n\nIl disparaîtra du panneau. Le fichier du Drive n'est pas modifié.`)) return;
+  (etatPts.regles[id] = etatPts.regles[id] || {})[num] = {le:new Date().toISOString(), par:auteurCarto};
+  etatPts.journal.push({le:new Date().toISOString(), par:auteurCarto, outil:id, num, texte:p.t, action:"réglé"});
+  await sauverEtatPts();
+  dessinerCarte(); ouvrir(id); if(typeof majChiffres==="function") majChiffres();
+}
 
 /* Pastille d'état des points (décision du 23/09/2026), calculée à chaque
    ouverture depuis le fichier POINTS-<id>.md, et seulement depuis lui :
@@ -893,7 +970,7 @@ const PASTILLE = {
 };
 function etatPoints(o){
   if(!POINTS_ORIGINE[o.id]) return {cle:"aucun", ouverts:0, bloquants:0};
-  const ouverts = (o.points||[]).filter(p=>!p.fait);
+  const ouverts = pointsOuverts(o).comptes;
   const bloquants = ouverts.filter(p=>p.bloquant).length;
   const n = ouverts.length;
   const cle = bloquants ? "rouge" : n===0 ? "vert" : n<=5 ? "orange" : "rouge";
@@ -1217,7 +1294,7 @@ function montrerBulle(id, e){
   if(!survolPossible()) return;
   const o = parId[id]; if(!o) return;
   if(!bulle){ bulle = document.createElement("div"); bulle.className = "bulle-carte"; document.body.appendChild(bulle); }
-  const ouverts = (o.points||[]).map(pointDe).filter(p=>!p.fait);
+  const ouverts = pointsOuverts(o).comptes;
   const b = ouverts.filter(p=>p.bloquant).length, org = POINTS_ORIGINE[o.id];
   bulle.innerHTML = `<b>${nomDe(o)}</b>${o.resume||""}`
     + `<div class="mini">${org ? "modifié le " + new Date(org.modifie).toLocaleDateString("fr-FR") : "aucun fichier de points sur le Drive"}`
@@ -1362,12 +1439,23 @@ function ouvrir(id){
   /* 24/09/2026 : un point réglé DISPARAÎT du panneau ; les BLOQUANTS remontent
      en tête, les ordinaires en dessous, chaque groupe dans l'ordre du fichier
      (le plus ancien en haut) ; deux compteurs distincts, non cliquables. */
-  const ouverts = (o.points||[]).map(pointDe).filter(p=>!p.fait);
-  const bloq = ouverts.filter(p=>p.bloquant), ordi = ouverts.filter(p=>!p.bloquant);
-  const pts = ouverts.length
-    ? `<div class="compteurs-pts"><span class="b">${bloq.length} bloquant${bloq.length>1?"s":""}</span><span>${ordi.length} ordinaire${ordi.length>1?"s":""}</span></div>`
-      + `<ul>${bloq.concat(ordi).map(p=>`<li class="${p.bloquant?"bloquant":""}">${p.t}</li>`).join("")}</ul>`
-    : `<p class="vide">Aucun point ouvert.</p>`;
+  const {comptes:ouverts, sansNumero} = pointsOuverts(o);
+  const ancien = ancienneGeneration(o);
+  /* chaque groupe du plus ancien en haut au plus récent en bas (date de dernière modification) */
+  const parDate = (a,b) => String(dateDuPoint(o.id,a.num)||"").localeCompare(String(dateDuPoint(o.id,b.num)||"")) || ((a.num??0)-(b.num??0));
+  const bloq = ouverts.filter(p=>p.bloquant).sort(parDate), ordi = ouverts.filter(p=>!p.bloquant).sort(parDate);
+  const court = d => d ? new Date(d).toLocaleDateString("fr-FR",{day:"2-digit",month:"2-digit"}) : "";
+  const ligneP = p => `<li class="${p.bloquant?"bloquant":""}">${p.num!=null?`<b class="num-pt">${p.num}</b> `:""}${p.t}`
+    + `${dateDuPoint(o.id,p.num)?`<span class="date-pt">${court(dateDuPoint(o.id,p.num))}</span>`:""}`
+    + `${p.num!=null?`<button type="button" class="regler-pt" data-id="${o.id}" data-num="${p.num}" title="Régler ce point (enregistré dans la base, le fichier du Drive n'est pas modifié)">✓ régler</button>`:""}</li>`;
+  const pts = (ancien ? `<div class="alerte-gen">Fichier d'ancienne génération : aucun point n'est numéroté. À reprendre en entier en numérotant chaque point (« - [ ] 1. texte »), de façon continue.</div>` : "")
+    + (ouverts.length
+      ? `<div class="compteurs-pts"><span class="b">${bloq.length} bloquant${bloq.length>1?"s":""}</span><span>${ordi.length} ordinaire${ordi.length>1?"s":""}</span></div>`
+        + `<ul>${bloq.concat(ordi).map(ligneP).join("")}</ul>`
+      : `<p class="vide">Aucun point ouvert.</p>`)
+    + (sansNumero.length
+      ? `<div class="sans-num"><b>${sansNumero.length} point${sansNumero.length>1?"s":""} sans numéro</b> — à numéroter dans le fichier ; ${sansNumero.length>1?"ils ne comptent":"il ne compte"} ni dans les compteurs ni dans la couleur.<ul>${sansNumero.map(p=>`<li>${p.t}</li>`).join("")}</ul></div>`
+      : "");
   /* les pistes portent l'arbitrage rendu dans la liste des suggestions */
   const ETIQ = {fait:"on fait", attend:"on attend", abandonne:"abandonnée"};
   const pis = o.pistes && o.pistes.length
@@ -1395,6 +1483,7 @@ function ouvrir(id){
   /* 24/09/2026 : les liens entrants et sortants restent au SEUL schéma — pas de liste dans le panneau */
   void liensHTML;
 
+  document.querySelectorAll("#p-sections .regler-pt").forEach(b=>b.addEventListener("click",ev=>{ ev.stopPropagation(); reglerPoint(b.dataset.id, Number(b.dataset.num)); }));
   document.querySelectorAll("#p-sections .section > button").forEach(b=>{
     b.addEventListener("click",()=>{
       const s = b.parentElement;
