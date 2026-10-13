@@ -6,7 +6,7 @@
 <title>CARTO — écosystème des outils FIDAL Notaires</title>
 <style>
 /* ============================================================
-   CARTO v1.3 (13/10/2026 : finitions du mode pilotage) — charte FIDAL v2.2 — dépôt propre `carto`
+   CARTO v1.4 (13/10/2026 : finitions du pilotage, de la présentation, de la visite guidée et du téléphone) — charte FIDAL v2.2 — dépôt propre `carto`
    Pastille d'état des points calculée mécaniquement (décision du 23/09/2026)
    Cinq familles par nature d'usage · guirlandes · suggestions arbitrées
    Bleu nuit #0F2238 · bleu canard #33838B · orange #FF982D
@@ -289,6 +289,22 @@ h1,h2,h3,.titre{font-family:Georgia,"Times New Roman",serif;font-weight:400}
   max-width:min(660px,86vw);text-align:center;pointer-events:none;
   opacity:0;transition:opacity .6s}
 .recit.vu{opacity:1}
+/* 24/09/2026 : sur ordinateur, le texte se place À CÔTÉ de la planète présentée */
+.recit.cote{transform:none;text-align:left;max-width:340px;bottom:auto;transition:opacity .6s,left 1.2s ease,top 1.2s ease;
+  background:rgba(5,14,28,.72);border:1px solid rgba(109,213,220,.22);border-radius:12px;padding:12px 16px}
+/* pendant la visite, les chiffres et l'aide cèdent la place au fil d'étapes */
+#vue-presentation.en-visite .chiffres, #vue-presentation.en-visite .aide{display:none}
+.fil-visite{position:absolute;left:50%;bottom:22px;transform:translateX(-50%);z-index:8;display:none;align-items:center;gap:10px;
+  background:rgba(5,14,28,.7);border:1px solid rgba(109,213,220,.25);border-radius:999px;padding:6px 14px;font-size:12px;color:#CFE2EE}
+.fil-visite.on{display:flex}
+.fil-visite .barre-fil{display:flex;gap:2px}
+.fil-visite .barre-fil i{width:8px;height:6px;border-radius:2px;background:rgba(255,255,255,.18);display:block}
+.fil-visite .barre-fil i.fait{background:var(--canard)} .fil-visite .barre-fil i.ici{background:var(--jaune-forme)}
+.fil-visite button{background:none;border:1px solid rgba(109,213,220,.4);color:#CFE2EE;border-radius:999px;font:inherit;font-size:11.5px;padding:3px 10px;cursor:pointer}
+.fam-bloc h3{cursor:pointer}
+.fam-bloc h3::after{content:"▸";margin-left:auto;color:var(--orange)}
+.fam-bloc.ouverte h3::after{content:"▾"}
+.fam-bloc:not(.ouverte) .ligne-outil{display:none}
 .recit b{display:block;font-family:Georgia,serif;font-size:21px;color:var(--jaune-forme);margin-bottom:7px}
 .recit span{font-size:14px;line-height:1.6;color:#CFE2EE;text-shadow:0 2px 12px rgba(0,8,18,.9)}
 .btn-visite{background:rgba(5,14,28,.6);border:1px solid rgba(109,213,220,.3);color:#CFE2EE;
@@ -329,7 +345,11 @@ li.bloquant::before{content:"★ ";color:#E5484D}
   #carte{display:none}
   .liste-mobile{display:block;position:absolute;inset:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:54px 14px 90px}
   .outils-carte{top:10px;left:12px}
-  #btn-presentation{display:none}
+  /* 18 et 24/09/2026 : la présentation et la visite guidée restent disponibles sur téléphone */
+  .panneau{position:fixed;inset:0;width:100%;max-width:none;height:100%;z-index:40;border-radius:0;border-left:0}
+  .recit{bottom:86px}
+  .fil-visite{bottom:14px;padding:5px 10px;gap:6px;max-width:94vw}
+  .fil-visite .barre-fil{display:none}
   .sous{display:none}
   .barre{padding:12px 16px;gap:12px}
   .btn-sugg{right:12px;bottom:12px}
@@ -423,6 +443,10 @@ li.bloquant::before{content:"★ ";color:#E5484D}
     <button class="btn-visite" id="btn-visite" aria-pressed="false"
             style="position:absolute;top:18px;right:150px;z-index:6">Visite guidée</button>
     <div class="recit" id="recit"></div>
+    <div class="fil-visite" id="fil-visite" aria-live="polite">
+      <span class="barre-fil" id="fil-barre"></span><span id="fil-texte"></span>
+      <button type="button" id="btn-pause">Pause</button>
+    </div>
     <div class="sous-bascule" role="group" aria-label="Rendu">
       <button id="btn-plat" aria-pressed="false">À plat</button>
       <button id="btn-3d" aria-pressed="true">3D</button>
@@ -432,7 +456,7 @@ li.bloquant::before{content:"★ ";color:#E5484D}
       <p>UNE SUITE D'OUTILS CONSTRUITE AU CABINET</p>
     </div>
     <div class="chiffres" id="chiffres"></div>
-    <div class="aide">glisser pour tourner · molette pour approcher · cliquer une planète pour voir ses liens · recliquer pour ouvrir l'application</div>
+    <div class="aide">glisser pour tourner · molette ou pincement pour approcher · cliquer une planète pour voir ses liens · double clic dans le vide pour revenir au plan d'ensemble</div>
     <div class="choix-public" id="choix-public">
       <div class="boite">
         <h3>Pour qui est cette visite ?</h3>
@@ -1206,6 +1230,7 @@ function cacherBulle(){ if(bulle) bulle.hidden = true; }
 /* La version de poche : sur téléphone, le schéma est illisible ; on montre la
    même information en liste, famille par famille, et le toucher ouvre le
    panneau de l'outil comme le clic sur le cercle. */
+const familleOuverte = () => { try{ return localStorage.getItem("carto-famille")||""; }catch(e){ return ""; } };
 function dessinerListeMobile(){
   const boite=document.getElementById("liste-mobile"); if(!boite) return;
   const rangOrdre={centre:0,hub:1,feuille:2};
@@ -1213,12 +1238,12 @@ function dessinerListeMobile(){
     const outils=OUTILS.filter(o=>o.famille===cle)
       .sort((a,b)=>(rangOrdre[a.rang]-rangOrdre[b.rang])||a.nom.localeCompare(b.nom,"fr"));
     if(!outils.length) return "";
-    return `<div class="fam-bloc"><h3><i style="background:${f.couleur}"></i>${f.nom}</h3>`
+    return `<div class="fam-bloc${familleOuverte()===cle?" ouverte":""}" data-fam="${cle}"><h3><i style="background:${f.couleur}"></i>${f.nom}</h3>`
       + outils.map(o=>{
           const reste=pointsRestants(o), ep=etatPoints(o);
           return `<div class="ligne-outil ${grise(o)?"termine":""}" data-id="${o.id}" role="button" tabindex="0">
-            <div class="nom">${nomDe(o)}<small>${niv(o.niveau).nom}</small></div>
             <div class="jh">${NIVEAUX.map(l=>`<i style="${l.n<=o.niveau?`background:${l.couleur}`:""}"></i>`).join("")}</div>
+            <div class="nom">${nomDe(o)}<small>${niv(o.niveau).nom}</small></div>
             <div class="reste ${ep.cle==="aucun"?"zero":""}" style="${ep.cle!=="aucun"?`background:${PASTILLE[ep.cle].c}`:""}" title="${textePastille(ep)}">${ep.bloquants?"★ ":""}${reste}</div>
             ${o.url?`<a class="aller" href="${o.url}" target="_blank" rel="noopener" aria-label="Ouvrir ${o.nom}" title="Ouvrir l'application">↗</a>`:""}
           </div>`;
@@ -1226,6 +1251,13 @@ function dessinerListeMobile(){
       + `</div>`;
   }).join("");
   boite.querySelectorAll(".ligne-outil .aller").forEach(a=>a.addEventListener("click",e=>e.stopPropagation()));
+  /* 24/09/2026 : familles repliées, seuls les intertitres visibles ; la carte rouvre la dernière famille ouverte */
+  boite.querySelectorAll(".fam-bloc h3").forEach(h=>h.addEventListener("click",()=>{
+    const bloc = h.parentElement, ouvrirBloc = !bloc.classList.contains("ouverte");
+    boite.querySelectorAll(".fam-bloc").forEach(x=>x.classList.remove("ouverte"));
+    if(ouvrirBloc) bloc.classList.add("ouverte");
+    try{ localStorage.setItem("carto-famille", ouvrirBloc ? bloc.dataset.fam : ""); }catch(e){}
+  }));
   boite.querySelectorAll(".ligne-outil").forEach(el=>{
     el.addEventListener("click",()=>ouvrir(el.dataset.id));
     el.addEventListener("keydown",e=>{ if(e.key==="Enter"||e.key===" "){e.preventDefault();ouvrir(el.dataset.id);} });
@@ -1832,7 +1864,7 @@ function planeteSousLeCurseur(x,y){
 function dessinerCiel(now){
   const t=(now-t0)/1000;
   tilt+=(tiltCible-tilt)*0.06;
-  zoom+=(zoomCible-zoom)*0.09;
+  zoom+=(zoomCible-zoom)*(visite.actif?0.022:0.09);   // 24/09/2026 : pendant la visite, mouvement léger et lent
   if(!doux && !glisse) azimut+=0.0016;
 
   dessinerFond(t);
@@ -1898,11 +1930,12 @@ function dessinerCiel(now){
       ctx.shadowColor="rgba(255,231,100,.8)"; ctx.shadowBlur=12;
       ctx.beginPath(); ctx.arc(it.pr.x,it.pr.y,r+7+Math.sin(t*3)*1.2,0,7); ctx.stroke();
       ctx.restore();
-      if(adresseDe(it.b.id) && app>=1) dessinerPastilleOuvrir(it.pr, r, t, cx, cy, ech);
+      /* 24/09/2026 : en présentation, le clic allume la planète et ses liens, il n'ouvre rien */
     }
     positionsEcran.push({id:it.b.id, x:cx+(it.pr.x-foyer.x)*ech, y:cy+(it.pr.y-foyer.y)*ech, r:r*ech});
     etiquettes.push({pt:it.pr,b:it.b,r,f:app});
   }
+  placerRecit();
 
   // étiquettes : les concentrateurs d'abord, puis on écarte ce qui se chevauche
   ctx.textAlign="center";
@@ -1955,16 +1988,18 @@ cv.addEventListener("pointerup",e=>{
   const etaitClic = glisse && !bouge;
   glisse=false;
   if(!etaitClic) return;
-  /* pendant la visite guidée, un clic passe au module suivant */
-  if(visite.actif){ clearTimeout(visite.minuteur); etape(visite.etape+1); return; }
+  /* pendant la visite guidée, un clic passe au module suivant (et sort de la pause) */
+  if(visite.actif){ clearTimeout(visite.minuteur); visite.pause=false; majPause(); etape(visite.etape+1); return; }
   const rect=cv.getBoundingClientRect();
   const sx=e.clientX-rect.left, sy=e.clientY-rect.top;
-  /* la pastille « ouvrir », ou un second clic sur la planète déjà allumée, ouvre l'application */
-  if(selectionPres && surPastille(sx,sy) && ouvrirAppli(selectionPres)) return;
   const id=planeteSousLeCurseur(sx,sy);
-  if(id && id===selectionPres){ if(ouvrirAppli(id)) return; selectionPres=null; return; }
-  if(id && (e.ctrlKey||e.metaKey) && ouvrirAppli(id)) return;
-  selectionPres = id || null;
+  /* 24/09/2026 : l'ouverture d'une application est réservée au mode pilotage ; un
+     second clic sur la planète allumée l'éteint */
+  if(id){ selectionPres = (id===selectionPres) ? null : id; dernierVide=0; return; }
+  /* double clic (ou double appui) dans le vide : retour au plan d'ensemble */
+  const maintenant = Date.now();
+  if(maintenant - dernierVide < 380){ retourEnsemble(); dernierVide = 0; return; }
+  dernierVide = maintenant;
 });
 cv.addEventListener("pointermove",e=>{
   if(glisse) return;
@@ -1973,6 +2008,18 @@ cv.addEventListener("pointermove",e=>{
   cv.style.cursor = (planeteSousLeCurseur(sx,sy) || (selectionPres && surPastille(sx,sy))) ? "pointer" : "";
 });
 cv.addEventListener("pointercancel",()=>glisse=false);
+let dernierVide = 0;
+function retourEnsemble(){ selectionPres=null; zoomCible=1; tiltCible=renduTilt(); majBasculeRendu(); }
+
+/* pincement à deux doigts pour approcher (18/09/2026) */
+(function(){
+  const doigts = new Map(); let ecart0 = 0, zoom0 = 1;
+  const ecart = () => { const [a,b] = [...doigts.values()]; return Math.hypot(a.x-b.x, a.y-b.y); };
+  cv.addEventListener("pointerdown", e=>{ doigts.set(e.pointerId,{x:e.clientX,y:e.clientY}); if(doigts.size===2){ ecart0 = ecart(); zoom0 = zoomCible; glisse=false; } });
+  cv.addEventListener("pointermove", e=>{ if(!doigts.has(e.pointerId)) return; doigts.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(doigts.size===2 && ecart0){ glisse=false; zoomCible = borne(zoom0 * ecart()/ecart0, 0.5, 3.2); } });
+  ["pointerup","pointercancel","pointerleave"].forEach(ev=>cv.addEventListener(ev, e=>{ doigts.delete(e.pointerId); if(doigts.size<2) ecart0=0; }));
+})();
 cv.addEventListener("wheel",e=>{e.preventDefault();zoomCible=borne(zoomCible*(e.deltaY>0?0.92:1.08),0.5,2.6);},{passive:false});
 
 /* ---------- chiffres du bas ---------- */
@@ -2023,6 +2070,7 @@ function mode(m){
   document.getElementById("vue-pilotage").classList.toggle("active",p);
   document.getElementById("vue-presentation").classList.toggle("active",!p);
   if(!p){
+    if(!visite.actif){ tiltCible = tilt = renduTilt(); majBasculeRendu(); }
     redimensionner();
     t0=performance.now();
     animerChiffres();
@@ -2031,8 +2079,10 @@ function mode(m){
 }
 bPil.addEventListener("click",()=>mode("pilotage"));
 bPre.addEventListener("click",()=>mode("presentation"));
-bPlat.addEventListener("click",()=>{tiltCible=0;majBasculeRendu();});
-b3d.addEventListener("click",()=>{tiltCible=1.02;majBasculeRendu();});
+/* 21/09/2026 : la présentation se souvient du dernier sous-mode choisi */
+const renduTilt = () => { try{ return localStorage.getItem("carto-rendu")==="plat" ? 0 : 1.02; }catch(e){ return 1.02; } };
+bPlat.addEventListener("click",()=>{tiltCible=0;majBasculeRendu(); try{ localStorage.setItem("carto-rendu","plat"); }catch(e){} });
+b3d.addEventListener("click",()=>{tiltCible=1.02;majBasculeRendu(); try{ localStorage.setItem("carto-rendu","volume"); }catch(e){} });
 
 /* ---------- filtres du schéma ---------- */
 function brancherFiltre(id,cle){
@@ -2078,27 +2128,41 @@ function majPublic(p){
 }
 
 /* ---------- visite guidée ---------- */
-const ETAPES=[
-  {cible:null,zoom:1.0,tilt:1.02,titre:"FIDAL Apps",
-   texte:"Un seul point d'entrée. Toutes les tuiles du cabinet partent d'ici, et tout ce qui a été construit gravite autour."},
-  {cible:"marteau",zoom:2.1,tilt:0.92,titre:"MARTEAU",
-   texte:"L'audit de portefeuille immobilier. À lui seul, il interroge sept outils de données et en compile un rapport unique."},
-  {cible:"fusion",zoom:2.1,tilt:0.92,titre:"FUSION",
-   texte:"La fusion de sociétés : lecture de l'état hypothécaire, regroupement par unité foncière, cinq blocs rédactionnels en sortie."},
-  {cible:"countdown",zoom:2.1,tilt:0.92,titre:"COUNTDOWN",
-   texte:"Le chiffrage : émoluments, frais, délais, prêts. Dix calculateurs réunis derrière une seule porte."},
-  {cible:"prix",zoom:2.3,tilt:0.92,titre:"PRIX",
-   texte:"L'estimation d'un bien et l'argumentaire de négociation : ventes réellement enregistrées, quartier, rendement, travaux chiffrés — jusqu'au prix à proposer au vendeur."},
-  {cible:null,zoom:0.72,tilt:1.16,titre:"Un atelier, pas une collection",
-   texte:"Vingt-cinq outils, et surtout les liens entre eux : c'est là que se gagne le temps. Cliquez une planète pour voir les siens."}
-];
+/* Visite guidée — arbitrages des 21 et 24/09/2026 :
+   • elle passe par TOUS les outils, du centre vers la périphérie ;
+   • l'arrêt sur chaque outil dure en proportion du nombre de modules qu'il appelle ;
+   • texte de présentation en deux versions selon le public choisi au lancement
+     (noms de code pour les collaborateurs, noms métier pour les avocats) ;
+   • à chaque arrêt la planète s'allume avec ses liens, les autres s'assombrissent,
+     les orbites continuent de tourner, la caméra se rapproche lentement ;
+   • mise en pause possible ; un clic passe au suivant ; jamais de retour en arrière ;
+   • fin : retour automatique au plan d'ensemble. */
+const RANG_VISITE = {centre:0, hub:1, feuille:2};
+function etapesVisite(){
+  const ouverture = {cible:null, zoom:1.0, duree:6500, titre:"FIDAL Apps",
+    texte: public_==="avocats"
+      ? "Un seul point d'entrée vers tout ce que le cabinet sait produire. Chaque outil gravite autour, et ce sont leurs liens qui font gagner du temps."
+      : "Un seul point d'entrée. Toutes les tuiles du cabinet partent d'ici, et tout ce qui a été construit gravite autour."};
+  const outils = OUTILS.slice().sort((a,b)=>(RANG_VISITE[a.rang]-RANG_VISITE[b.rang]) || a.nom.localeCompare(b.nom,"fr"));
+  const etapes = outils.filter(o=>o.rang!=="centre").map(o=>{
+    const appels = LIENS_REELS.filter(l=>l.de===o.id).length;
+    return {cible:o.id, zoom: o.rang==="hub" ? 1.45 : 1.7,
+            duree: Math.min(15000, 5000 + appels*1400),
+            texte: o.resume || ""};
+  });
+  const cloture = {cible:null, zoom:0.78, duree:7000, titre:"Un atelier, pas une collection",
+    texte:`${OUTILS.length} outils, et surtout les liens entre eux : c'est là que se gagne le temps.`};
+  return [ouverture, ...etapes, cloture];
+}
+let ETAPES = [];
 const recit=document.getElementById("recit");
 const bVisite=document.getElementById("btn-visite");
 
 function etape(i){
   if(i>=ETAPES.length){ arreterVisite(); return; }
   const e=ETAPES[i];
-  visite.etape=i; visite.cible=e.cible; zoomCible=e.zoom; tiltCible=e.tilt; majBasculeRendu();
+  visite.etape=i; visite.cible=e.cible; zoomCible=e.zoom; majBasculeRendu();
+  majFil();
   /* la planète visitée s'allume avec ses liens */
   selectionPres = e.cible;
   recit.classList.remove("vu");
@@ -2108,7 +2172,34 @@ function etape(i){
     recit.classList.add("vu");
   },450);
   clearTimeout(visite.minuteur);
-  visite.minuteur=setTimeout(()=>etape(i+1),7600);
+  if(!visite.pause) visite.minuteur=setTimeout(()=>etape(i+1), e.duree||7600);
+}
+/* le fil d'étapes, en bas de l'écran (compact sur téléphone) */
+function majFil(){
+  const n = ETAPES.length, i = visite.etape;
+  document.getElementById("fil-barre").innerHTML = ETAPES.map((_,k)=>`<i class="${k<i?"fait":k===i?"ici":""}"></i>`).join("");
+  const e = ETAPES[i], nom = e && e.cible && parId[e.cible] ? nomDe(parId[e.cible]) : (e ? e.titre : "");
+  document.getElementById("fil-texte").textContent = `${i+1} / ${n} — ${nom}`;
+}
+function majPause(){ document.getElementById("btn-pause").textContent = visite.pause ? "Reprendre" : "Pause"; }
+document.getElementById("btn-pause").addEventListener("click", ev=>{
+  ev.stopPropagation();
+  visite.pause = !visite.pause; majPause();
+  clearTimeout(visite.minuteur);
+  if(!visite.pause){ const e = ETAPES[visite.etape]; visite.minuteur = setTimeout(()=>etape(visite.etape+1), (e&&e.duree)||7600); }
+});
+/* 24/09/2026 : sur ordinateur le texte se tient à côté de la planète présentée ;
+   sur téléphone il reste en bas de l'écran */
+function placerRecit(){
+  if(!recit) return;
+  const cote = visite.actif && visite.cible && window.innerWidth > 820;
+  recit.classList.toggle("cote", !!cote);
+  if(!cote){ recit.style.left = ""; recit.style.top = ""; return; }
+  const pe = (positionsEcran||[]).find(x=>x.id===visite.cible); if(!pe) return;
+  const rect = cv.getBoundingClientRect();
+  const gauche = pe.x + pe.r + 26 + 340 < rect.width ? pe.x + pe.r + 26 : Math.max(16, pe.x - pe.r - 26 - 340);
+  recit.style.left = Math.round(gauche) + "px";
+  recit.style.top = Math.round(Math.min(rect.height - 160, Math.max(70, pe.y - 40))) + "px";
 }
 const choixPublic=document.getElementById("choix-public");
 function proposerVisite(){ choixPublic.classList.add("on"); }
@@ -2119,17 +2210,24 @@ choixPublic.querySelectorAll("button").forEach(b=>b.addEventListener("click",()=
   lancerVisite();
 }));
 function lancerVisite(){
-  visite.actif=true; bVisite.setAttribute("aria-pressed","true");
+  ETAPES = etapesVisite();
+  visite.actif=true; visite.pause=false; majPause(); bVisite.setAttribute("aria-pressed","true");
   bVisite.textContent="Arrêter la visite";
+  document.getElementById("fil-visite").classList.add("on");
+  document.getElementById("vue-presentation").classList.add("en-visite");
+  bPil.hidden = true;                 // 24/09/2026 : bascule vers le pilotage masquée pendant la visite
   etape(0);
 }
 function arreterVisite(){
   if(!visite.actif) return;
   visite.actif=false; visite.cible=null;
   clearTimeout(visite.minuteur);
-  zoomCible=1; tiltCible=1.02; majBasculeRendu();
-  recit.classList.remove("vu");
+  zoomCible=1; tiltCible=renduTilt(); majBasculeRendu();
+  recit.classList.remove("vu"); recit.classList.remove("cote");
   selectionPres=null;
+  document.getElementById("fil-visite").classList.remove("on");
+  document.getElementById("vue-presentation").classList.remove("en-visite");
+  bPil.hidden = false;
   bVisite.setAttribute("aria-pressed","false");
   bVisite.textContent="Visite guidée";
 }
