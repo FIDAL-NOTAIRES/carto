@@ -366,8 +366,15 @@ li.bloquant::before{content:"★ ";color:#E5484D}
 </style>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="https://connexion-omega.vercel.app/acces.js"></script>
+<style>
+  /* Bandeau d'incidents commun (19/10/2026) : l'écran est plein cadre (hauteur 100 % et défilement masqué) ; le bandeau se pose donc en superposition en haut de l'écran, sans rien repousser. */
+  #fidal-bandeau-zone{position:fixed;top:0;left:0;right:0;z-index:99999}
+  #fidal-bandeau-zone:not(:empty){padding-top:env(safe-area-inset-top,0px);background:#A01040}
+</style>
+  <script src="https://connexion-omega.vercel.app/bandeau.js" defer></script>
 </head>
 <body>
+<div id="fidal-bandeau-zone"></div>
 
 <header class="barre">
   <div class="marque">CARTO <span>·</span> écosystème des outils</div>
