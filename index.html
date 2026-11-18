@@ -6,7 +6,7 @@
 <title>CARTO — écosystème des outils FIDAL Notaires</title>
 <style>
 /* ============================================================
-   CARTO v1.5 (13/10/2026 : finitions du pilotage, de la présentation, de la visite guidée et du téléphone ; points numérotés réglables) — charte FIDAL v2.2 — dépôt propre `carto`
+   CARTO v1.6 (18/11/2026 : mise à jour de l'inventaire — 22 outils ajoutés, liens relevés dans le code en ligne, secteurs à largeur variable ; avant, v1.5 du 13/10/2026 : points numérotés réglables) — charte FIDAL v2.2 — dépôt propre `carto`
    Pastille d'état des points calculée mécaniquement (décision du 23/09/2026)
    Cinq familles par nature d'usage · guirlandes · suggestions arbitrées
    Bleu nuit #0F2238 · bleu canard #33838B · orange #FF982D
@@ -34,7 +34,7 @@ body{
   font-family:"Segoe UI",system-ui,-apple-system,sans-serif;
   overflow:hidden;
 }
-h1,h2,h3,.titre{font-family:Georgia,"Times New Roman",serif;font-weight:400}
+h1,h2,h3,.titre{font-family:"Segoe UI",system-ui,-apple-system,sans-serif;font-weight:600}
 
 /* ---------- barre du haut ---------- */
 .barre{
@@ -42,7 +42,7 @@ h1,h2,h3,.titre{font-family:Georgia,"Times New Roman",serif;font-weight:400}
   padding:14px 22px;border-bottom:1px solid var(--trait);
   background:rgba(8,21,37,.72);backdrop-filter:blur(6px);
 }
-.marque{font-family:Georgia,serif;font-size:19px;letter-spacing:.2px}
+.marque{font-family:"Segoe UI",system-ui,-apple-system,sans-serif;font-weight:600;font-size:19px;letter-spacing:.2px}
 .marque span{color:var(--jaune-texte)}
 .sous{font-size:12.5px;color:var(--encre-faible);margin-left:-14px}
 .bascule{display:flex;margin-left:auto;border:1px solid var(--trait);border-radius:999px;overflow:hidden}
@@ -67,13 +67,14 @@ h1,h2,h3,.titre{font-family:Georgia,"Times New Roman",serif;font-weight:400}
 .noeud text{font-size:11.5px;fill:var(--encre);pointer-events:none;text-anchor:middle}
 .noeud text.ouvrir{font-size:9px;fill:var(--jaune-texte,#FFC900);opacity:0;transition:opacity .15s}
 .noeud.choisi text.ouvrir,.noeud:hover text.ouvrir{opacity:.95}
-.noeud.centre text{font-size:14px;font-family:Georgia,serif}
+.noeud.centre text{font-size:14px;font-family:"Segoe UI",system-ui,-apple-system,sans-serif;font-weight:600}
 .noeud.hub text{font-size:12.5px}
 .noeud text.role{font-size:9.5px;fill:var(--encre-faible)}
 .estompe{opacity:.13}
 .lien{fill:none;stroke-linecap:round;transition:opacity .2s}
 .lien.existant{stroke:var(--cyan);stroke-width:1.6;opacity:.55}
-.lien.vive{opacity:1;stroke-width:2.6}
+.lien.existant.socle{opacity:.16;stroke-width:1.1;stroke-dasharray:2 6}
+.lien.vive,.lien.existant.socle.vive{opacity:1;stroke-width:2.6;stroke-dasharray:none}
 .lien.terne{opacity:.10}
 .noeud.termine circle.corps,.noeud.termine text,.noeud.termine rect{opacity:.22}
 .guirlande{fill:#FFFFFF;pointer-events:none;filter:drop-shadow(0 0 3px rgba(109,213,220,.95)) drop-shadow(0 0 7px rgba(109,213,220,.5))}
@@ -248,7 +249,7 @@ h1,h2,h3,.titre{font-family:Georgia,"Times New Roman",serif;font-weight:400}
   pointer-events:none;z-index:5;
 }
 .chiffre{text-align:center}
-.chiffre b{display:block;font-family:Georgia,serif;font-size:38px;color:var(--jaune-forme);line-height:1}
+.chiffre b{display:block;font-family:"Segoe UI",system-ui,-apple-system,sans-serif;font-weight:600;font-size:38px;color:var(--jaune-forme);line-height:1}
 .chiffre span{font-size:11.5px;color:#8FB0C4;letter-spacing:1.4px}
 .sous-bascule{position:absolute;top:18px;right:22px;z-index:6;display:flex;
   border:1px solid rgba(109,213,220,.3);border-radius:999px;overflow:hidden;
@@ -312,7 +313,7 @@ h1,h2,h3,.titre{font-family:Georgia,"Times New Roman",serif;font-weight:400}
 .fam-bloc h3::after{content:"▸";margin-left:auto;color:var(--orange)}
 .fam-bloc.ouverte h3::after{content:"▾"}
 .fam-bloc:not(.ouverte) .ligne-outil{display:none}
-.recit b{display:block;font-family:Georgia,serif;font-size:21px;color:var(--jaune-forme);margin-bottom:7px}
+.recit b{display:block;font-family:"Segoe UI",system-ui,-apple-system,sans-serif;font-weight:600;font-size:21px;color:var(--jaune-forme);margin-bottom:7px}
 .recit span{font-size:14px;line-height:1.6;color:#CFE2EE;text-shadow:0 2px 12px rgba(0,8,18,.9)}
 .btn-visite{background:rgba(5,14,28,.6);border:1px solid rgba(109,213,220,.3);color:#CFE2EE;
   font:inherit;font-size:12.5px;padding:6px 16px;border-radius:999px;cursor:pointer}
@@ -399,7 +400,7 @@ li.bloquant::before{content:"★ ";color:#E5484D}
         <span class="lecture-heure" id="lecture-heure"></span>
       </div>
     </div>
-    <svg id="carte" viewBox="-560 -535 1120 1070" preserveAspectRatio="xMidYMid meet" role="img"
+    <svg id="carte" viewBox="-610 -585 1220 1170" preserveAspectRatio="xMidYMid meet" role="img"
          aria-label="Carte des outils et de leurs interactions"></svg>
     <div class="liste-mobile" id="liste-mobile" aria-label="Liste des outils par famille"></div>
 
@@ -441,7 +442,7 @@ li.bloquant::before{content:"★ ";color:#E5484D}
       <div class="tete">
         <button class="fermer" id="fermer-tiroir" aria-label="Fermer">×</button>
         <h2>Suggestions</h2>
-        <div class="srv" id="sugg-srv">arbitrages conservés sur le serveur du cabinet</div>
+        <div class="srv" id="sugg-srv">arbitrages conservés sur le serveur de l'étude</div>
       </div>
       <div class="filtres-sugg" id="filtres-sugg">
         <button id="btn-corbeille" aria-pressed="false" title="Suggestions abandonnées, tous outils confondus">🗑 Corbeille</button>
@@ -467,7 +468,7 @@ li.bloquant::before{content:"★ ";color:#E5484D}
     </div>
     <div class="pres-tete">
       <h2>L'atelier numérique de FIDAL Notaires</h2>
-      <p>UNE SUITE D'OUTILS CONSTRUITE AU CABINET</p>
+      <p>UNE SUITE D'OUTILS CONSTRUITE À L'ÉTUDE</p>
     </div>
     <div class="chiffres" id="chiffres"></div>
     <div class="aide">glisser pour tourner · molette ou pincement pour approcher · cliquer une planète pour voir ses liens · double clic dans le vide pour revenir au plan d'ensemble</div>
@@ -476,7 +477,7 @@ li.bloquant::before{content:"★ ";color:#E5484D}
         <h3>Pour qui est cette visite ?</h3>
         <p>Le vocabulaire des outils s'adapte au public. Le choix vaut pour toute la visite.</p>
         <div class="options">
-          <button data-p="collaborateurs">Collaborateurs du cabinet</button>
+          <button data-p="collaborateurs">Collaborateurs de l'étude</button>
           <button data-p="avocats">Avocats FIDAL</button>
         </div>
         <div style="margin-top:12px"><button class="annuler" data-p="">Annuler</button></div>
@@ -500,12 +501,12 @@ const NIVEAUX = [
   {n:2, nom:"Codé",                   desc:"une première version existe",          couleur:"#FF982D"},
   {n:3, nom:"Produit de la donnée",   desc:"il sort un résultat exploitable",      couleur:"#FFC900"},
   {n:4, nom:"Utilisable en l'état",   desc:"on peut s'en servir sur un dossier",   couleur:"#7FD18A"},
-  {n:5, nom:"En production",          desc:"déployé et utilisé au cabinet",        couleur:"#1F7A4D"}
+  {n:5, nom:"En production",          desc:"déployé et utilisé à l'étude",         couleur:"#1F7A4D"}
 ];
 
 /* Cinq familles, par nature d'usage — arbitrage du 18/09/2026 */
 const FAMILLES = {
-  noyau:        {nom:"Noyau — le lanceur",            couleur:"#FFE764"},
+  noyau:        {nom:"Noyau — lanceur et socle commun", couleur:"#FFE764"},
   audit:        {nom:"Audit immobilier",              couleur:"#33838B"},
   documentaire: {nom:"Production documentaire",       couleur:"#A01040"},
   valorisation: {nom:"Valorisation et négociation",   couleur:"#FF982D"},
@@ -515,7 +516,7 @@ const FAMILLES = {
 const OUTILS = [
   // ---- centre ----
   {id:"fidal-apps", nom:"FIDAL Apps", rang:"centre", famille:"noyau", niveau:5,
-   resume:"Le lanceur : dix tuiles, la barre du haut, le journal des éléments à voir et le bandeau d'incidents communs à toute la suite.",
+   resume:"Le lanceur : les tuiles des outils du quotidien, la radio et la revue de presse, sur le téléphone comme sur le poste.",
    points:["Journal des éléments à voir : page à construire, tri du plus ancien au plus récent",
            "Bouton de la barre du haut portant le compteur unifié",
            "Journal des incidents réservé à l'administrateur, à brancher sur la table Neon partagée"],
@@ -523,16 +524,16 @@ const OUTILS = [
            "Faire remonter sur chaque tuile le niveau d'avancement affiché ici, pour que les collaborateurs sachent ce qui est stable"]},
 
   // ---- concentrateurs ----
-  {id:"marteau", nom:"MARTEAU", rang:"hub", famille:"audit", niveau:3,
-   resume:"Audit de portefeuille immobilier. Le plus gros consommateur de la suite : il appelle sept outils de données et compile un rapport.",
+  {id:"marteau", nom:"MARTEAU", rang:"hub", famille:"audit", niveau:4,
+   resume:"Audit de portefeuille immobilier. On tape le nom d'une société : il retrouve ses parcelles, interroge une dizaine d'outils de la suite et rend son rapport d'audit en Word.",
    points:["Plan de nommage à dix familles arrêté, à câbler complètement",
            "Module Documents / Drive : dépôt des titres, inventaire, rangement et renommage",
            "Bibliothèque de phrases pré-écrites rédigée pour les dix familles, à relier au moteur de rapport"],
    pistes:["Appeler PAINT pour insérer les plans coloriés directement dans le rapport d'audit",
            "Réutiliser l'écran d'attente commun plutôt qu'un chargement propre à l'outil"]},
 
-  {id:"fusion", nom:"FUSION", rang:"hub", famille:"audit", niveau:3,
-   resume:"Traitement par société : lecture de l'état hypothécaire en deux passes, regroupement par unité foncière, cinq blocs rédactionnels en sortie.",
+  {id:"fusion", nom:"FUSION", rang:"hub", famille:"audit", niveau:4,
+   resume:"Traitement par société : lecture des états hypothécaires, regroupement par unité foncière, filiation cadastrale, pièces à réclamer, état des risques par groupe et blocs rédactionnels en sortie.",
    points:["Onglet des points à trancher à finaliser",
            "Arborescence Drive et plan de nommage à sept codes",
            "Compilation Word / PDF et annexe des servitudes en recette"],
@@ -583,6 +584,37 @@ const OUTILS = [
            "Pastille de proposition de régénération sur la tuile"],
    pistes:["Proposer la régénération d'un état de plus de six mois sans attendre que le collaborateur y pense"]},
 
+  {id:"histo", nom:"HISTO", rang:"feuille", famille:"audit", niveau:4,
+   resume:"Généalogie cadastrale : la filiation de chaque parcelle d'après les documents de filiation de la DGFiP, en frise et en tableau. MARTEAU et FUSION l'interrogent d'office.",
+   points:["Essai du besoin « document d'arpentage » à faire",
+           "Lenteur du plan PAINT ouvert depuis HISTO"],
+   pistes:[]},
+
+  {id:"travaux", nom:"TRAVAUX", rang:"feuille", famille:"audit", niveau:4,
+   resume:"Autorisations d'urbanisme et bâti, parcelle par parcelle. Branché sur MARTEAU, qui en tire ses voyants.",
+   points:[],
+   pistes:[]},
+
+  {id:"audit", nom:"AUDIT", rang:"feuille", famille:"audit", niveau:4,
+   resume:"Outil d'audit immobilier et lettre de mission : les parcelles de la société, le rapport en Word.",
+   points:["Versions 4.44 (rapport en vrai Word) et 4.45 (parcelles tirées de REDPAR) livrées : dépôt à confirmer"],
+   pistes:[]},
+
+  {id:"audit-bail", nom:"AUDIT BAIL", rang:"feuille", famille:"audit", niveau:1,
+   resume:"Audit de bail commercial : un audit objectif du bail et sa fiche de synthèse, avec scénarios. Cadré, pas encore codé.",
+   points:["Outil cadré le 29/10/2026 : rien de codé"],
+   pistes:[]},
+
+  {id:"vitis", nom:"VITIS", rang:"feuille", famille:"audit", niveau:1,
+   resume:"Audit viticole : registre parcellaire, fermages, surfaces, aides, marques. En cours de cadrage.",
+   points:["Cadrage en cours : rien de codé"],
+   pistes:[]},
+
+  {id:"copro", nom:"COPRO", rang:"feuille", famille:"audit", niveau:3,
+   resume:"Copropriété : analyse du règlement et des procès-verbaux d'assemblée générale. FUSION doit l'appeler pour ses groupes en copropriété.",
+   points:["Branchement dans FUSION à coder (procès-verbaux d'assemblée)"],
+   pistes:[]},
+
   {id:"paint", nom:"PAINT", rang:"feuille", famille:"documentaire", niveau:5,
    resume:"Coloriage de plans cadastraux et génération de l'extrait officiel DGFiP.",
    points:["À documenter"],
@@ -601,9 +633,30 @@ const OUTILS = [
    pistes:["Récupérer les souscripteurs depuis PLUME au lieu de relire un document"]},
 
   {id:"apostille", nom:"APOSTILLE", rang:"feuille", famille:"documentaire", niveau:4,
-   resume:"Apostille et légalisation : le cabinet est autorité compétente depuis 2025.",
+   resume:"Apostille et légalisation : l'étude est autorité compétente depuis 2025.",
    points:["À documenter"],
    pistes:["Tenir un compteur des apostilles délivrées, utile en présentation"]},
+
+  {id:"tup", nom:"TUP", rang:"feuille", famille:"documentaire", niveau:1,
+   resume:"Acte de transmission universelle de patrimoine : un modèle Word relié au tableau des groupes et aux pièces du Drive. Nouveau projet.",
+   points:["Projet ouvert le 26/09/2026 : rien de codé"],
+   pistes:[]},
+
+  {id:"moneta", nom:"MONETA", rang:"feuille", famille:"documentaire", niveau:4,
+   resume:"Le clausier de l'étude : les actes versés sont découpés en clauses, rangées par rubrique, avec la clause de référence de chacune.",
+   points:["Neutralisation des clauses en champs, à coder après la période d'essai",
+           "Moteur de comparaison des variantes"],
+   pistes:[]},
+
+  {id:"lexio", nom:"LEXIO", rang:"feuille", famille:"documentaire", niveau:2,
+   resume:"Relecture des projets du confrère : deux versions d'un projet d'acte comparées, les écarts relevés.",
+   points:[],
+   pistes:[]},
+
+  {id:"coffee", nom:"COFFEE", rang:"feuille", famille:"documentaire", niveau:4,
+   resume:"Les réflexes de séance : pièce d'identité, procuration authentique, légalisation, note d'honoraires, remise des clés, virement.",
+   points:["Cartes en attente de textes ou de documents"],
+   pistes:[]},
 
   // ---- famille calcul ----
   {id:"delais-immo", nom:"DÉLAIS-IMMO", rang:"feuille", famille:"valorisation", niveau:5,
@@ -625,15 +678,62 @@ const OUTILS = [
    resume:"Estimation de la valeur vénale et argumentaire de négociation : ventes enregistrées, quartier IRIS, posture investisseur, travaux chiffrés, enveloppe budgétaire.",
    points:[{t:"Sources de données gratuites arrêtées : DVF, cadastre, ADEME, Géorisques, BD TOPO, carte des loyers",fait:true},
            {t:"Lecture d'une capture d'annonce côté serveur",fait:true},
-           {t:"Barème des travaux et réglages sur le serveur du cabinet",fait:true},
+           {t:"Barème des travaux et réglages sur le serveur de l'étude",fait:true},
            "Essai depuis le téléphone : capture puis lecture dans l'outil",
            "Postures défensive et agressive à finaliser au-dessus de la cascade"],
    pistes:["Partir des données de parcelle de REDPAR pour préremplir la fiche du bien",
            "Rendre la valeur obtenue disponible dans l'audit MARTEAU"]},
 
+  {id:"taxverif-particulier", nom:"TAXVÉRIF PARTICULIER", rang:"feuille", famille:"valorisation", niveau:2,
+   resume:"Vérification de la taxe foncière d'un particulier. Première version livrée.",
+   points:["Tarifs d'habitation de la DGFiP et un avis d'essai attendus"],
+   pistes:[]},
+
+  {id:"taxverif-pro", nom:"TAXVÉRIF PRO", rang:"feuille", famille:"valorisation", niveau:2,
+   resume:"Vérification de la taxe foncière des locaux professionnels (ancien TAXFONC).",
+   points:["Code source de TAXFONC à retrouver avant le renommage"],
+   pistes:[]},
+
+  // ---- socle commun et pilotage ----
+  {id:"morning", nom:"MORNING", rang:"feuille", famille:"noyau", niveau:5,
+   resume:"La page d'ouverture de journée : une seule autorisation Google le matin, valable pour tous les outils, et l'état de santé de la suite.",
+   points:[],
+   pistes:[]},
+
+  {id:"plateforme", nom:"PLATEFORME", rang:"feuille", famille:"noyau", niveau:3,
+   resume:"Le portail d'accueil des outils, rangés par besoin : le bien, les titres, chiffrer, rédiger, la séance.",
+   points:["Connexion des personnes et accès par personne : codés le 16/11/2026, à charger"],
+   pistes:[]},
+
+  {id:"carnet", nom:"CARNET", rang:"feuille", famille:"noyau", niveau:4,
+   resume:"L'annuaire commun des associés et collaborateurs : les outils y lisent le notaire en charge, les signatures et les accès.",
+   points:[],
+   pistes:[]},
+
+  {id:"anonymisation", nom:"ANONYMISATION", rang:"feuille", famille:"noyau", niveau:3,
+   resume:"Bibliothèque commune de découpage des pièces avant leur envoi à l'analyse, avec son journal. Une brique transverse.",
+   points:[],
+   pistes:[]},
+
+  {id:"fidal-test", nom:"FIDAL TEST", rang:"feuille", famille:"noyau", niveau:3,
+   resume:"Le lanceur des testeurs : une application mise à l'essai chaque mois.",
+   points:["Programme : REDPAR en novembre, COFFEE en décembre, les quatre mois suivants à choisir",
+           "Protection nominative de REDPAR à coder"],
+   pistes:[]},
+
+  {id:"suivi", nom:"SUIVI", rang:"feuille", famille:"noyau", niveau:3,
+   resume:"Le suivi des dossiers à partir des courriels : la roue des dossiers, les échéances, les arbitrages à trancher.",
+   points:["Arbitrages du 21/10/2026 à coder : clôture manuelle, sablier, bilan mensuel, courriel de 7 h"],
+   pistes:[]},
+
+  {id:"assistant", nom:"ASSISTANT", rang:"feuille", famille:"noyau", niveau:3,
+   resume:"Le journal des instructions et le tableau de bord des décisions, avec son module de notes.",
+   points:["Module de notes cadré le 28/10/2026"],
+   pistes:[]},
+
   // ---- famille confort ----
-  {id:"attente", nom:"ATTENTE", rang:"feuille", famille:"relation", niveau:2,
-   resume:"Écran de chargement enrichi pour les générations de documents qui durent plusieurs minutes.",
+  {id:"attente", nom:"ATTENTE", rang:"feuille", famille:"relation", niveau:4,
+   resume:"L'écran d'attente commun des générations longues : avancement, plan cadastral et contenus à lire pendant que l'outil travaille.",
    points:["Contenus à afficher pendant l'attente"],
    pistes:["En faire un composant commun appelé par tous les outils lents, au même titre que le bandeau d'alerte"]},
 
@@ -648,13 +748,29 @@ const OUTILS = [
    pistes:["Signaler à XYLO la parution d'un arrêté termites ou mérule"]},
 
   {id:"partage", nom:"PARTAGE AMIABLE", rang:"feuille", famille:"relation", niveau:5,
-   resume:"La cave du cabinet, en application installable.",
+   resume:"La cave de l'étude, en application installable.",
    points:[],
    pistes:[]},
 
   {id:"consult", nom:"CONSULT", rang:"feuille", famille:"relation", niveau:4,
-   resume:"Tuile du lanceur.",
+   resume:"D'un échange oral avec le client à une consultation écrite. Chantier volontairement en attente.",
    points:["À documenter"],
+   pistes:[]},
+
+  {id:"argos", nom:"ARGOS", rang:"feuille", famille:"relation", niveau:4,
+   resume:"Le portail de patrimoine immobilier remis au client : la carte de ses sites, la fiche de chacun et ses pièces.",
+   points:["Contour réel des parcelles sur la carte : codé le 17/11/2026, à charger",
+           "Film d'ouverture : dépôt depuis ARGOSAdmin et lecture au lancement à coder"],
+   pistes:[]},
+
+  {id:"argosadmin", nom:"ARGOSAdmin", rang:"feuille", famille:"relation", niveau:4,
+   resume:"Le site d'administration d'ARGOS, isolé des portails des clients : clients, sites, dépôt des pièces, échéances.",
+   points:[],
+   pistes:[]},
+
+  {id:"pistis", nom:"PISTIS", rang:"feuille", famille:"relation", niveau:1,
+   resume:"Le site commun de vérification des documents émis par l'étude, par code à flasher. Cadré, rien de codé.",
+   points:["Cadrage du 04/11/2026 : rien de codé"],
    pistes:[]},
 
   {id:"plateforme-avocats", nom:"PLATEFORME AVOCATS", rang:"feuille", famille:"relation", niveau:1,
@@ -687,7 +803,22 @@ const ADRESSES = {
   "radio":            "https://fidal-apps.vercel.app/",
   "presse":           "https://fidal-apps.vercel.app/",
   "partage":          "https://partage-amiable.vercel.app/",
-  "consult":          "https://consult-sand.vercel.app/"
+  "consult":          "https://consult-sand.vercel.app/",
+  "histo":            "https://histo-sand.vercel.app/",
+  "travaux":          "https://travaux-two.vercel.app/",
+  "copro":            "https://copro-sigma.vercel.app/",
+  "moneta":           "https://moneta-navy.vercel.app/",
+  "lexio":            "https://lexio-topaz.vercel.app/",
+  "coffee":           "https://coffee-taupe-gamma.vercel.app/",
+  "taxverif-particulier": "https://taxverif-particulier.vercel.app/",
+  "morning":          "https://connexion-omega.vercel.app/",
+  "plateforme":       "https://phare-ashy.vercel.app/",
+  "carnet":           "https://carnet-ivory.vercel.app/",
+  "anonymisation":    "https://anonymisation-olive.vercel.app/",
+  "suivi":            "https://suivi-pi-orcin.vercel.app/",
+  "assistant":        "https://assistant-ebon-phi.vercel.app/",
+  "argos":            "https://argos-aftl.vercel.app/",
+  "argosadmin":       "https://argosadmin-two.vercel.app/"
 };
 OUTILS.forEach(o=>{ if(ADRESSES[o.id]) o.url = ADRESSES[o.id]; });
 const adresseDe = id => (parId[id] && parId[id].url) || null;
@@ -814,7 +945,7 @@ setTimeout(()=>chargerPointsDrive(false), 400);
 /* Interactions. type : "existant" ou "suggere" */
 const LIENS = [
   // le lanceur porte tout
-  ...["marteau","fusion","countdown","redpar","urba","trente","paint","plume","partage","consult","radio","presse","risques","apostille"]
+  ...["marteau","fusion","countdown","redpar","urba","trente","paint","plume","partage","consult","radio","presse","risques","apostille","coffee"]
      .map(v=>({de:"fidal-apps",vers:v,type:"existant",quoi:"tuile du lanceur"})),
 
   {de:"marteau",vers:"redpar",type:"existant",quoi:"données de parcelle et de bâti"},
@@ -824,6 +955,11 @@ const LIENS = [
   {de:"marteau",vers:"matrice",type:"existant",quoi:"relevés de matrice"},
   {de:"marteau",vers:"certif",type:"existant",quoi:"certificat d'urbanisme"},
   {de:"marteau",vers:"risques",type:"existant",quoi:"état des risques"},
+  {de:"marteau",vers:"histo",type:"existant",quoi:"filiation cadastrale"},
+  {de:"marteau",vers:"travaux",type:"existant",quoi:"autorisations d'urbanisme et bâti"},
+  {de:"marteau",vers:"carnet",type:"existant",quoi:"notaire en charge et assistante"},
+  {de:"marteau",vers:"anonymisation",type:"existant",quoi:"découpage des pièces avant analyse"},
+  {de:"marteau",vers:"attente",type:"existant",quoi:"écran d'attente commun"},
 
   {de:"countdown",vers:"delais-immo",type:"existant",quoi:"calcul des délais"},
   {de:"countdown",vers:"pret-particulier",type:"existant",quoi:"frais de prêt"},
@@ -831,14 +967,29 @@ const LIENS = [
 
   {de:"fusion",vers:"paint",type:"existant",quoi:"plans cadastraux coloriés"},
   {de:"fusion",vers:"matrice",type:"existant",quoi:"relevés de matrice"},
+  {de:"fusion",vers:"redpar",type:"existant",quoi:"parcelles de la société"},
+  {de:"fusion",vers:"histo",type:"existant",quoi:"filiation cadastrale"},
+  {de:"fusion",vers:"risques",type:"existant",quoi:"état des risques par groupe"},
+  {de:"fusion",vers:"carnet",type:"existant",quoi:"notaire en charge"},
+  {de:"fusion",vers:"attente",type:"existant",quoi:"écran d'attente commun"},
+  {de:"histo",vers:"paint",type:"existant",quoi:"plan colorié de la filiation"},
+  {de:"coffee",vers:"countdown",type:"existant",quoi:"convention d'honoraires"},
+  {de:"coffee",vers:"pret-particulier",type:"existant",quoi:"frais de prêt"},
+  {de:"coffee",vers:"pret-pro",type:"existant",quoi:"frais de prêt professionnel"},
+  {de:"argosadmin",vers:"argos",type:"existant",quoi:"alimente les portails des clients"},
+  {de:"argosadmin",vers:"carnet",type:"existant",quoi:"associés et signatures"},
+  {de:"plateforme",vers:"fidal-apps",type:"existant",quoi:"les mêmes outils, rangés par besoin"},
+  ...["suivi","assistant","lexio"].map(d=>({de:d,vers:"histo",type:"existant",socle:true,quoi:"relais de lecture du Drive"})),
+  // l'autorisation Google du matin, donnée une fois sur MORNING
+  ...["marteau","fusion","histo","copro","moneta","carnet","coffee","suivi","assistant","lexio","argosadmin"]
+     .map(d=>({de:d,vers:"morning",type:"existant",socle:true,quoi:"autorisation Google du matin"})),
   {de:"paint",vers:"redpar",type:"existant",quoi:"identification des parcelles"},
   {de:"risques",vers:"redpar",type:"existant",quoi:"localisation de la parcelle"},
 
   // propositions
   {de:"marteau",vers:"paint",type:"suggere",quoi:"insérer les plans coloriés dans le rapport d'audit"},
-  {de:"marteau",vers:"attente",type:"suggere",quoi:"écran d'attente commun pendant la compilation"},
   {de:"fusion",vers:"trente",type:"suggere",quoi:"sécuriser la chaîne trentenaire des immeubles repris"},
-  {de:"fusion",vers:"attente",type:"suggere",quoi:"écran d'attente commun"},
+  {de:"fusion",vers:"copro",type:"suggere",quoi:"analyse des procès-verbaux d'assemblée des groupes en copropriété"},
   {de:"countdown",vers:"prix",type:"suggere",quoi:"accueillir PRIX comme calculateur"},
   {de:"prix",vers:"redpar",type:"suggere",quoi:"préremplir la fiche du bien"},
   {de:"prix",vers:"marteau",type:"suggere",quoi:"verser la valorisation dans l'audit"},
@@ -856,10 +1007,11 @@ const LIENS = [
 
 /* Secteurs du schéma rayonnant : l'ordre des familles autour du centre */
 const SECTEURS = [
-  {hub:"marteau",   membres:["redpar","urba","xylo","trente","matrice","certif","risques"]},
-  {hub:"fusion",    membres:["paint","plume","depot-capital","apostille"]},
-  {hub:"countdown", membres:["delais-immo","pret-particulier","pret-pro","prix"]},
-  {hub:null,        membres:["attente","radio","presse","partage","consult","plateforme-avocats"]}
+  {hub:"marteau",   membres:["redpar","urba","xylo","trente","matrice","certif","risques","histo","travaux","audit","audit-bail","vitis"]},
+  {hub:"fusion",    membres:["paint","copro","tup","moneta","lexio","plume","depot-capital","apostille","coffee"]},
+  {hub:"countdown", membres:["delais-immo","pret-particulier","pret-pro","prix","taxverif-particulier","taxverif-pro"]},
+  {hub:null,        membres:["attente","radio","presse","partage","consult","plateforme-avocats","pistis","argos","argosadmin"]},
+  {hub:null,        membres:["morning","plateforme","carnet","anonymisation","fidal-test","suivi","assistant"]}
 ];
 
 /* ==================================================================
@@ -889,9 +1041,31 @@ const METIER = {
   "attente":"Suivi des traitements longs",
   "radio":"Écoute intégrée",
   "presse":"Revue de presse",
-  "partage":"Cave du cabinet",
+  "partage":"Cave de l'étude",
   "consult":"Consultation",
-  "plateforme-avocats":"Portail des avocats"
+  "plateforme-avocats":"Portail des avocats",
+  "histo":"Généalogie cadastrale",
+  "travaux":"Autorisations d'urbanisme et bâti",
+  "audit":"Audit immobilier et lettre de mission",
+  "audit-bail":"Audit de bail commercial",
+  "vitis":"Audit viticole",
+  "copro":"Analyse de copropriété",
+  "tup":"Acte de transmission universelle de patrimoine",
+  "moneta":"Clausier de l'étude",
+  "lexio":"Relecture des projets du confrère",
+  "coffee":"Réflexes de séance",
+  "taxverif-particulier":"Vérification de taxe foncière — particuliers",
+  "taxverif-pro":"Vérification de taxe foncière — professionnels",
+  "morning":"Ouverture de journée",
+  "plateforme":"Portail d'accueil des outils",
+  "carnet":"Annuaire de l'étude",
+  "anonymisation":"Anonymisation des pièces",
+  "fidal-test":"Banc d'essai des testeurs",
+  "suivi":"Suivi des dossiers",
+  "assistant":"Journal des instructions",
+  "argos":"Portail de patrimoine du client",
+  "argosadmin":"Administration des portails clients",
+  "pistis":"Vérification des documents émis"
 };
 let public_ = "collaborateurs";
 const nomDe = o => public_==="avocats" ? (METIER[o.id]||o.nom) : o.nom;
@@ -1049,7 +1223,7 @@ async function chargerArbitrages(){
       arbitrages = d.valeur;
       try{ localStorage.setItem("carto-arbitrages",JSON.stringify(arbitrages)); }catch(e){}
     }
-    marquerSrv("ok","arbitrages conservés sur le serveur du cabinet"+(d&&d.maj?" — dernière mise à jour "+new Date(d.maj).toLocaleDateString("fr-FR"):""));
+    marquerSrv("ok","arbitrages conservés sur le serveur de l'étude"+(d&&d.maj?" — dernière mise à jour "+new Date(d.maj).toLocaleDateString("fr-FR"):""));
   }catch(e){
     marquerSrv("ko","serveur injoignable — arbitrages de ce poste uniquement");
   }
@@ -1063,7 +1237,7 @@ function sauverArbitrages(){
     try{
       const r = await fetch(API_PARAMETRES,{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify(arbitrages)});
       if(!r.ok) throw new Error("HTTP "+r.status);
-      marquerSrv("ok","arbitrages enregistrés sur le serveur du cabinet");
+      marquerSrv("ok","arbitrages enregistrés sur le serveur de l'étude");
     }catch(e){
       marquerSrv("ko","enregistrement serveur impossible — conservé sur ce poste");
     }
@@ -1141,10 +1315,16 @@ const R_HUB = 185, R_FEUILLE = 372;
 
 function calculerPositions(){
   pos["fidal-apps"] = {x:0,y:0,r:50};
-  const nbSecteurs = SECTEURS.length;
+  /* 18/11/2026 : la part d'angle de chaque secteur suit le nombre de ses outils,
+     et un secteur chargé s'étage sur trois profondeurs au lieu de deux. */
+  const poids = SECTEURS.map(sec=>Math.max(6, sec.membres.length + 2));
+  const totalPoids = poids.reduce((t,v)=>t+v,0);
+  let departAngle = -Math.PI/2;
   SECTEURS.forEach((sec,i)=>{
-    const centreAngle = -Math.PI/2 + (i + .5) * (2*Math.PI/nbSecteurs);
-    const demiOuverture = (2*Math.PI/nbSecteurs) * .40;
+    const part = (poids[i]/totalPoids) * 2*Math.PI;
+    const centreAngle = departAngle + part/2;
+    const demiOuverture = part * .41;
+    departAngle += part;
     if (sec.hub){
       pos[sec.hub] = {
         x: Math.cos(centreAngle)*R_HUB,
@@ -1156,7 +1336,8 @@ function calculerPositions(){
     sec.membres.forEach((id,j)=>{
       const t = n===1 ? 0 : (j/(n-1))*2-1;           // -1 → +1
       const a = centreAngle + t*demiOuverture;
-      const rayon = R_FEUILLE + (j%2 ? 46 : 0);      // deux profondeurs, pour aérer
+      const rayon = n>5 ? R_FEUILLE - 14 + [0,62,124][j%3]   // trois profondeurs pour un secteur chargé
+                        : R_FEUILLE + (j%2 ? 46 : 0);          // deux profondeurs sinon
       pos[id] = {x:Math.cos(a)*rayon, y:Math.sin(a)*rayon, r:25};
     });
   });
@@ -1187,7 +1368,7 @@ function dessinerCarte(){
     if(!d) return;
     const p = document.createElementNS(SVGNS,"path");
     p.setAttribute("d",d);
-    p.setAttribute("class","lien existant"+((grise(parId[l.de])||grise(parId[l.vers]))?" terne":""));
+    p.setAttribute("class","lien existant"+(l.socle?" socle":"")+((grise(parId[l.de])||grise(parId[l.vers]))?" terne":""));
     p.dataset.de=l.de; p.dataset.vers=l.vers; p.dataset.i=i;
     gLiens.appendChild(p);
   });
@@ -1538,7 +1719,7 @@ dessinerCarte();
 
 /* déplacement et zoom du schéma */
 (function(){
-  const VB0={x:-560,y:-535,w:1120,h:1070};
+  const VB0={x:-610,y:-585,w:1220,h:1170};
   let vb={...VB0}, tire=false, ox=0, oy=0;
   const maj=()=>svg.setAttribute("viewBox",`${vb.x} ${vb.y} ${vb.w} ${vb.h}`);
   svg.addEventListener("pointerdown",e=>{
@@ -2220,7 +2401,7 @@ function majPublic(p){
   dessinerCarte();
   if(selection){ ouvrir(selection); }
   document.querySelector(".pres-tete p").textContent =
-    p==="avocats" ? "CE QUE LE CABINET SAIT PRODUIRE" : "UNE SUITE D'OUTILS CONSTRUITE AU CABINET";
+    p==="avocats" ? "CE QUE L'ÉTUDE SAIT PRODUIRE" : "UNE SUITE D'OUTILS CONSTRUITE À L'ÉTUDE";
 }
 
 /* ---------- visite guidée ---------- */
@@ -2237,8 +2418,8 @@ const RANG_VISITE = {centre:0, hub:1, feuille:2};
 function etapesVisite(){
   const ouverture = {cible:null, zoom:1.0, duree:6500, titre:"FIDAL Apps",
     texte: public_==="avocats"
-      ? "Un seul point d'entrée vers tout ce que le cabinet sait produire. Chaque outil gravite autour, et ce sont leurs liens qui font gagner du temps."
-      : "Un seul point d'entrée. Toutes les tuiles du cabinet partent d'ici, et tout ce qui a été construit gravite autour."};
+      ? "Un seul point d'entrée vers tout ce que l'étude sait produire. Chaque outil gravite autour, et ce sont leurs liens qui font gagner du temps."
+      : "Un seul point d'entrée. Toutes les tuiles de l'étude partent d'ici, et tout ce qui a été construit gravite autour."};
   const outils = OUTILS.slice().sort((a,b)=>(RANG_VISITE[a.rang]-RANG_VISITE[b.rang]) || a.nom.localeCompare(b.nom,"fr"));
   const etapes = outils.filter(o=>o.rang!=="centre").map(o=>{
     const appels = LIENS_REELS.filter(l=>l.de===o.id).length;
