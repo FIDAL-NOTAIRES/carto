@@ -6,7 +6,7 @@
 <title>CARTO — écosystème des outils FIDAL Notaires</title>
 <style>
 /* ============================================================
-   CARTO v1.6 (18/11/2026 : mise à jour de l'inventaire — 22 outils ajoutés, liens relevés dans le code en ligne, secteurs à largeur variable ; avant, v1.5 du 13/10/2026 : points numérotés réglables) — charte FIDAL v2.2 — dépôt propre `carto`
+   CARTO v1.7 (19/11/2026 : ARGOS s'ouvre sur ARGOSAdmin, les portails des clients étant cloisonnés ; avant, v1.6 du 18/11/2026 : mise à jour de l'inventaire — 22 outils ajoutés, liens relevés dans le code en ligne, secteurs à largeur variable ; avant, v1.5 du 13/10/2026 : points numérotés réglables) — charte FIDAL v2.2 — dépôt propre `carto`
    Pastille d'état des points calculée mécaniquement (décision du 23/09/2026)
    Cinq familles par nature d'usage · guirlandes · suggestions arbitrées
    Bleu nuit #0F2238 · bleu canard #33838B · orange #FF982D
@@ -758,8 +758,8 @@ const OUTILS = [
    pistes:[]},
 
   {id:"argos", nom:"ARGOS", rang:"feuille", famille:"relation", niveau:4,
-   resume:"Le portail de patrimoine immobilier remis au client : la carte de ses sites, la fiche de chacun et ses pièces.",
-   points:["Contour réel des parcelles sur la carte : codé le 17/11/2026, à charger",
+   resume:"Le portail de patrimoine immobilier remis au client : la carte de ses sites, la fiche de chacun et ses pièces. Chaque client a son portail, cloisonné des autres : on y accède par ARGOSAdmin. Exemple : le portail d'AFTL (argos-aftl.vercel.app).",
+   points:["Contour réel des parcelles sur la carte : chargé le 19/11/2026, essai en ligne à faire",
            "Film d'ouverture : dépôt depuis ARGOSAdmin et lecture au lancement à coder"],
    pistes:[]},
 
@@ -817,7 +817,7 @@ const ADRESSES = {
   "anonymisation":    "https://anonymisation-olive.vercel.app/",
   "suivi":            "https://suivi-pi-orcin.vercel.app/",
   "assistant":        "https://assistant-ebon-phi.vercel.app/",
-  "argos":            "https://argos-aftl.vercel.app/",
+  "argos":            "https://argosadmin-two.vercel.app/",   /* 19/11/2026 : portails cloisonnés, l'entrée est ARGOSAdmin (AFTL cité en exemple dans la fiche) */
   "argosadmin":       "https://argosadmin-two.vercel.app/"
 };
 OUTILS.forEach(o=>{ if(ADRESSES[o.id]) o.url = ADRESSES[o.id]; });
